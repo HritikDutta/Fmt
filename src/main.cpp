@@ -63,6 +63,8 @@ int main(int argc, char** argv)
         }
     }
 
+    // Warning there'll be memory leaks.
+
     free(document);
     free(content);
 }

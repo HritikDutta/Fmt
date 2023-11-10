@@ -1,24 +1,12 @@
 {
     "templates": [
         {
-            "template": "Hello <$ chars: characters[2, characters.end] $><$ character: chars[params.data.index].name $><$ character $>",
+            "template": "<$ file \"tests/template_example.html\" $>",
             "output": "out.txt",
             "passes": [
                 {
                     "word": "World",
                     "data": { "index": 0 }
-                },
-                {
-                    "word": "There",
-                    "data": { "index": 1 }
-                },
-                {
-                    "word": "Hritik",
-                    "data": { "index": 2 }
-                },
-                {
-                    "word": "Hritik",
-                    "data": { "index": 3 }
                 }
             ]
         }
@@ -35,7 +23,7 @@
             "name": "Photographer"
         },
         {
-            "name": "Prgrammer"
+            "name": "Programmer"
         },
         {
             "name": "2342"

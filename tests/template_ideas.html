@@ -1,296 +1,230 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Character Select</title>
-  
-  <link rel="stylesheet" href="globals.css" />
-  <link rel="stylesheet" href="styleguide.css" />
-  <link rel="stylesheet" href="style.css" />
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;1,400;1,700;1,900&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --accent-light: var(--game-developer-light);
-      --accent-dark: var(--game-developer-dark);
-
-      --accent-light-half-opacity: var(--game-developer-light-half-opacity);
-      --accent-dark-half-opacity: var(--game-developer-dark-half-opacity);
-    }
-  </style>
-</head>
-<body onload="onLoadCharacterSelect()">
-  <div class="gradient_background"></div>
-  <main>
-    <div class="character_select_content">
-      <div class="character_select_header">
-        <h2 class="with_stroke transition_on_load_horizontal" value="Character Select">Character Select</h2>
+<$ // Loop over all characters for their cards in character select $>
+<$ for ch: characters {
+  <div class="slider_container">
+    <div class="character_panel">
+      <div class="avatar_big">
+        <img class="transition_on_load_horizontal pixel_perfect" src="<$ ch.portrait-path $>" alt="<$ ch.portrait-alt $>">
       </div>
       
-      <div class="character_select_main">
-        <div class="nav_buttons">
-          <button class="glow_button" id="nav_button_prev" onclick="sliderMoveToIndex(sliderTargetSelectionIndex - 1)">
-            <img src="img/icons/arrow-big-right.svg" alt="">
-          </button>
-          
-          <button class="glow_button" id="nav_button_next" onclick="sliderMoveToIndex(sliderTargetSelectionIndex + 1)">
-            <img src="img/icons/arrow-big-right.svg" alt="">
-          </button>
-        </div>
-        
-        <div class="slider_mask hide_scrollbar">
-          <div class="slider">
-            <div class="slider_container">
-              <div class="character_panel">
-                <div class="avatar_big">
-                  <img class="transition_on_load_horizontal pixel_perfect" src="img/avatars/Portraits/Portrait Game Developer.png" alt="Game Developer Portrait">
-                </div>
-                
-                <div class="window transition_on_load_horizontal">
-                  <div class="window_body">
-                    <div class="window_content">
-                      <h1 class="text_accent_light with_stroke" value="Game Developer">Game Developer</h1>
-                      <p>
-                        A <span class="text_accent_light">passionate game developer</span> from New Delhi, India. He is known to adapt to any kind of work quickly and learn new tools instantly.
-                        <br><br>
-                        He is your man if you want the job done quickly and efficiently.
-                      </p>
-                      
-                      <div class="character_stats">
-                        <h2 class="text_accent_dark with_stroke" value="Character Stats">Character Stats</h2>
-                        <div class="character_stats_grid">
-                          <div class="stat">
-                            <div class="positive">+</div> C/C++
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> C#
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> OpenGL
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Unity
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Data Structures
-                          </div>
-                          <div class="stat">
-                            <div class="negative">-</div> Long Afternoon Naps
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div class="play_section">
-                        <a class="glow_button" href="Game Developer.html">
-                          <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
-                          <span>Select</span>
-                        </a>
-                      </div>
-                    </div>
+      <div class="window transition_on_load_horizontal">
+        <div class="window_body">
+          <div class="window_content">
+            <h1 class="text_accent_light with_stroke" value="<$ ch.name $>"><$ ch.name $></h1>
+            <p>
+              <$ ch.blurb $>
+            </p>
+            
+            <div class="character_stats">
+              <h2 class="text_accent_dark with_stroke" value="Character Stats">Character Stats</h2>
+              <div class="character_stats_grid">
+                <$ // Only show first 4 stats here $>
+                <$ for stat: ch.stats[0,4] {
+                  <div class="stat">
+                    <div class="positive">+</div> <$ stat.label $>
                   </div>
+                } $>
+                
+                <div class="stat">
+                  <div class="negative">-</div> <$ ch.vice $>
                 </div>
               </div>
             </div>
             
-            <div class="slider_container">
-              <div class="character_panel">
-                <div class="avatar_big">
-                  <img class="transition_on_load_horizontal pixel_perfect" src="img/avatars/Portraits/Portrait Filmmaker.png" alt="Film Maker Portrait">
-                </div>
-                
-                <div class="window transition_on_load_horizontal">
-                  <div class="window_body">
-                    <div class="window_content">
-                      <h1 class="text_accent_light with_stroke" value="Film Maker">Film Maker</h1>
-                      <p>
-                        An <span class="text_accent_light">aspiring film-maker</span> from New Delhi, India. He is a master of deception and can whip up a story instantly.
-                        <br><br>
-                        His stories are so believable that even the police let him off every time.
-                      </p>
-                      
-                      <div class="character_stats">
-                        <h2 class="text_accent_dark with_stroke" value="Character Stats">Character Stats</h2>
-                        <div class="character_stats_grid">
-                          <div class="stat">
-                            <div class="positive">+</div> Screenwriting
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Cinematography
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Video Editing
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Direction
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Colour Grading
-                          </div>
-                          <div class="stat">
-                            <div class="negative">-</div> Clumsy
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div class="play_section">
-                        <a class="glow_button" href="Game Developer.html">
-                          <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
-                          <span>Select</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="slider_container">
-              <div class="character_panel">
-                <div class="avatar_big">
-                  <img class="transition_on_load_horizontal pixel_perfect" src="img/avatars/Portraits/Portrait Photographer.png" alt="Photographer Portrait">
-                </div>
-                
-                <div class="window transition_on_load_horizontal">
-                  <div class="window_body">
-                    <div class="window_content">
-                      <h1 class="text_accent_light with_stroke" value="Photographer">Photographer</h1>
-                      <p>
-                        A <span class="text_accent_light">hobbyist photographer</span> from New Delhi, India. No one is safe from his eyes (or his camera).
-                        <br><br>
-                        He can whip up his camera and switch lenses at an astonishing speed.
-                      </p>
-                      
-                      <div class="character_stats">
-                        <h2 class="text_accent_dark with_stroke" value="Character Stats">Character Stats</h2>
-                        <div class="character_stats_grid">
-                          <div class="stat">
-                            <div class="positive">+</div> Wildlife
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Street
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Fashion
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Architectural
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Photoshop
-                          </div>
-                          <div class="stat">
-                            <div class="negative">-</div> Forgets to charge battery
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div class="play_section">
-                        <a class="glow_button" href="Game Developer.html">
-                          <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
-                          <span>Select</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="slider_container">
-              <div class="character_panel">
-                <div class="avatar_big">
-                  <img class="transition_on_load_horizontal pixel_perfect" src="img/avatars/Portraits/Portrait Programmer.png" alt="Photographer Portrait">
-                </div>
-                
-                <div class="window transition_on_load_horizontal">
-                  <div class="window_body">
-                    <div class="window_content">
-                      <h1 class="text_accent_light with_stroke" value="Programmer">Programmer</h1>
-                      <p>
-                        A <span class="text_accent_light">sneaky programmer</span> who adapts to any new tech very quickly. He has a knack of going into the details of things so he understands his work from inside out.
-                        <br><br>
-                        He often hides hidden messages in his work.
-                      </p>
-                      
-                      <div class="character_stats">
-                        <h2 class="text_accent_dark with_stroke" value="Character Stats">Character Stats</h2>
-                        <div class="character_stats_grid">
-                          <div class="stat">
-                            <div class="positive">+</div> C/C++
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> C#
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> OpenGL
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Visual Studio
-                          </div>
-                          <div class="stat">
-                            <div class="positive">+</div> Data Structures
-                          </div>
-                          <div class="stat">
-                            <div class="negative">-</div> Coffee Addiction
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div class="play_section">
-                        <a class="glow_button" href="Game Developer.html">
-                          <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
-                          <span>Select</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="play_section">
+              <a class="glow_button" href="<$ ch.name $>.html">
+                <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
+                <span>Select</span>
+              </a>
             </div>
           </div>
         </div>
-
-        <div class="character_select_lower_container transition_on_load_vertical">
-          <span class="slider_dots">
-            <input type="radio" autocomplete="off" style="--_character-avatar: url('img\\avatars\\Portraits\\Portrait Game Developer.png')" class="slider_dot_radio character_select_dot" name="mission_0_image" onchange="sliderMoveToIndex(0)" checked>
-            <input type="radio" autocomplete="off" style="--_character-avatar: url('img\\avatars\\Portraits\\Portrait Filmmaker.png')" class="slider_dot_radio character_select_dot" name="mission_0_image" onchange="sliderMoveToIndex(1)">
-            <input type="radio" autocomplete="off" style="--_character-avatar: url('img\\avatars\\Portraits\\Portrait Photographer.png')" class="slider_dot_radio character_select_dot" name="mission_0_image" onchange="sliderMoveToIndex(2)">
-            <input type="radio" autocomplete="off" style="--_character-avatar: url('img\\avatars\\Portraits\\Portrait Programmer.png')" class="slider_dot_radio character_select_dot" name="mission_0_image" onchange="sliderMoveToIndex(3)">
-          </span>
-        </div>
-      </div>
-      
-      <div class="footer">
-        <div class="portfolio_description">
-          Hritik Dutta<br>
-          Combined Portfolio
-        </div>
-        
-        <div class="links">
-          <a href="mailto:dutta.hritik@gmail.com" target="_blank"><img src="img/icons/links/Gmail.svg" alt="Gmail"></a>
-          <a href="https://www.linkedin.com/in/hritik-dutta-a2b498154/" target="_blank"><img src="img/icons/links/LinkedIn.svg" alt="LinkedIn"></a>
-          <a href="https://github.com/HritikDutta" target="_blank"><img src="img/icons/links/GitHub.svg" alt="GitHub"></a>
-          <a href="https://hritikdutta.itch.io/" target="_blank"><img src="img/icons/links/itch.io.svg" alt="itch.io"></a>
-          <a href="https://www.instagram.com/isnt.a.gram/" target="_blank"><img src="img/icons/links/Instagram.svg" alt="Instagram"></a>
-          <a href="https://medium.com/@threewaydude" target="_blank"><img src="img/icons/links/Medium.svg" alt="Medium"></a>
-        </div>
       </div>
     </div>
-  </main>
-  
-  <script>
-    const accentColorNames = [
-      'game-developer',
-      'film-maker',
-      'photographer',
-      'programmer'
-    ];
-  </script>
+  </div>
+} $>
 
-  <script src="index.js"></script>
-</body>
-</html>
+<$ // Loop over all the missions and fill in the mission select window $>
+<$ character: characters[params.index] $>
+<div class="window transition_on_load_vertical" id="mission_select">
+  <div class="window_header">
+    <h2>Mission Select</h2>
+  </div>
+  <div class="window_body">
+    <div class="window_content">
+      <button class="options_list_toggle" id="mission_toggle" value="mission_options">
+        <h2><$ ch.projects[0].name $></h2>
+        <img class="option_toggle_arrow" src="img/icons/arrow-small-back.svg" alt="">
+      </button>
+      <div class="options_list" id="mission_options">
+        <$ mission_option_section_template: {
+          <$ for mission, mission_idx: missions {
+            <div class="option">
+              <input type="radio" autocomplete="off" class="option_radio_button" id="<$ mission_type_prefix $>_<$ mission_idx $>_radio" name="selected_mission" value="<$ mission_type_prefix $>_<$ mission_idx $>">
+              <label for="<$ mission_type_prefix $>_<$ mission_idx $>_radio" class="option_button">
+                <span><$ mission.name $></span>
+                <img class="option_select_arrow" src="img/icons/arrow-small-back.svg" alt="">
+              </label>
+            </div>
+          } $>
+        } $>
+        
+        <$ if character.main-missions {
+          <div class="option_section">
+            <h2 class="text_accent_dark with_stroke" value="Main Missions">Main Missions</h2>
+            <$ missions: character.main-missions $>
+            <$ mission_type_prefix: "main_mission" $>
+            <$ mission_option_section_template $>
+          </div>
+        } $>
+        
+        <$ if character.side-missions {
+          <div class="option_section">
+            <h2 class="text_accent_dark with_stroke" value="Side Missions">Side Missions</h2>
+            <$ missions: character.side-missions $>
+            <$ mission_type_prefix: "side_mission" $>
+            <$ mission_option_section_template $>
+          </div>
+        } $>
+      </div>
+      
+      <div class="vertical_line"></div>
+      
+      <div class="option_info_panel" id="mission_info_container">
+        <$ mission_info_template: {
+          <$ for mission, mission_idx: character.side-missions {
+            <div class="mission_info option_info" id="<$ mission_type_prefix $>_<$ mission_idx $>" data-updates-mission-cache>
+              <div class="option_info_container">
+                <h2><$ mission.name $></h2>
+                
+                <$ if mission.images {
+                  <div class="mission_images">
+                    <div class="nav_buttons">
+                      <button class="glow_button" id="nav_button_prev" onclick="sliderMoveToIndex(sliderTargetSelectionIndex - 1)">
+                        <img src="img/icons/arrow-big-right.svg" alt="">
+                      </button>
+                      
+                      <button class="glow_button" id="nav_button_next" onclick="sliderMoveToIndex(sliderTargetSelectionIndex + 1)">
+                        <img src="img/icons/arrow-big-right.svg" alt="">
+                      </button>
+                    </div>
+                    
+                    <div class="mission_images_content">
+                      <div class="slider_mask hide_scrollbar">
+                        <div class="slider">
+                          <$ for image_path: mission.images {
+                            <div class="slider_container image_container"><img src="<$ image_path $>" loading="lazy" alt=""></div>
+                          } $>
+                        </div>
+                      </div>
+                      
+                      <div class="image_lower_container">
+                        <span><$ mission.date $></span>
+                        <span class="difficulty_text">Difficulty: <$ mission.difficulty $></span>
+                        
+                        <!-- Slider dots need to be in front so they can be interacted with -->
+                        <span class="slider_dots">
+                          <$ for image_path, idx: mission.images {
+                            <input type="radio" autocomplete="off" class="slider_dot_radio image_slider_dot" name="<$ mission_type_prefix $>_<$ mission_idx $>_image" onchange="sliderMoveToIndex(<$ idx $>)" <$ if idx = 0 { checked } $>>
+                          } $>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                } $>
+                
+                <$ if mission.tags {
+                  <div class="mission_tags">
+                    <$ for tag: mission.tags {
+                      <div class="mission_tag">
+                        <div class="skill_icon">
+                          <$ tag.svg $>
+                        </div>
+                        <$ tag.label $>
+                      </div>
+                    } $>
+                  </div>
+                } $>
+                
+                <$ if mission.brief {
+                  <div class="mission_brief">
+                    <div class="mission_info_heading text_accent_dark">Mission Brief</div>
+                    <p>
+                      <$ mission.brief $>
+                    </p>
+                  </div>
+                } $>
+                
+                <div class="other_info">
+                  <$ if mission.challenges {
+                    <div class="challenges">
+                      <div class="mission_info_heading text_accent_dark">Challenges</div>
+                      <div class="challenge_list">
+                        <$ for challenge: mission.challenges {
+                          <div class="challenge"> <img class="challenge_checkbox" src="img/icons/Toggle On.png" alt=""><$ challenge $></div>
+                        } $>
+                      </div>
+                    </div>
+                  } $>
+                  
+                  <$ if mission.challenges & mission.rewards { <div class="vertical_line"></div> } $>
+                  
+                  <$ if mission.rewards {
+                    <div class="rewards">
+                      <div class="mission_info_heading text_accent_dark">Rewards</div>
+                      <table class="skill_points_table">
+                        <$ for reward: mission.rewards {
+                          <tr>
+                            <td><div class="skill_content">
+                              <div class="skill_icon">
+                                <$ reward.svg $>
+                              </div>
+                            </div></td>
+                            <td><div class="skill_content"><$ reward.label $></div></td>
+                          </tr>
+                        } $>
+                      </table>
+                    </div>
+                  } $>
+                </div>
+                
+                <div class="play_section">
+                  <a class="glow_button" href="https://play.google.com/store/apps/details?id=com.AFKStudios.HurryFlurry&pcampaignid=web_share" target="_blank">
+                    <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
+                    <span>Play</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          } $>
+        } $>
+        
+        <$ if character.main-missions {
+          <$ mission_type_prefix: "main_mission" $>
+          <$ mission_info_template $>
+        } $>
+        
+        <$ if character.side-missions {
+          <$ mission_type_prefix: "side_mission" $>
+          <$ mission_info_template $>
+        } $>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="portfolio_description">
+    Hritik Dutta<br>
+    <$ character.name $> Portfolio
+  </div>
+  
+  <div class="resume_link_container">
+    <a href="<$ character.resume_path $>" target="_blank">Download <$ character.name $> Resume</a>
+  </div>
+  
+  <div class="links">
+    <$ for link: links {
+      <a href="<$ link.href $>" target="_blank"><img src="<$ link.image $>" alt="<$ link.label $>"></a>
+    } $>
+  </div>
+</div>

@@ -38,7 +38,6 @@ static inline void print_token(int indent, const Token& token)
             print("%%\n", ref(spaces, indent), get_token_type_name(token.type));
             for (u64 i = 0; i < token.tokens.size; i++)
                 print_token(indent + tab_size, token.tokens[i]);
-            print("%END\n", ref(spaces, indent));
         } break;
 
         default:

@@ -5,6 +5,7 @@
 #include "containers/string.h"
 #include "containers/hash_table.h"
 #include "containers/string_builder.h"
+#include "fileio/fileio.h"
 #include "serialization/json.h"
 
 #include "fmt_variables.h"
@@ -13,6 +14,13 @@
 
 namespace Fmt
 {
+
+struct TokenizedFile
+{
+    bool encountered_error;
+    String content;
+    DynamicArray<Token> tokens;
+};
 
 struct ParseContext
 {
@@ -25,6 +33,8 @@ struct ParseContext
 
     DynamicArray<VariableData> var_stack;
     DynamicArray<Token> op_stack;
+
+    HashTable<String, TokenizedFile> tokenized_files;
 };
 
 static inline ParseContext create_sub_ctx_with_tokens(const ParseContext& ctx, const DynamicArray<Token>& tokens)
@@ -37,6 +47,7 @@ static inline ParseContext create_sub_ctx_with_tokens(const ParseContext& ctx, c
 
 static bool parse_tokens(ParseContext& ctx);
 static bool store_token_in_var(const Token& token, VariableData& var, ParseContext& ctx);
+static bool get_file_tokens(ParseContext& ctx, DynamicArray<Token>& tokens);
 
 static VariableData* get_variable_data(ParseContext& ctx)
 {
@@ -309,6 +320,14 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
             VariableData* rhs;
             encountered_error = get_variable(ctx, rhs);
             var = *rhs;
+        } break;
+
+        case Token::Type::FILE:
+        {
+            ctx.token_index++;
+            
+            var.type = VariableData::Type::TOKENS;
+            encountered_error = get_file_tokens(ctx, var.tokens);
         } break;
 
         default:
@@ -593,6 +612,38 @@ inline bool parse_decision_tree(ParseContext& ctx, DynamicArray<Token>& out_toke
     return encountered_error;
 }
 
+static bool get_file_tokens(ParseContext& ctx, DynamicArray<Token>& tokens)
+{
+    Token next_token = ctx.tokens[ctx.token_index];
+    VariableData file_path_var;
+    bool encountered_error = store_token_in_var(next_token, file_path_var, ctx);
+
+    if (file_path_var.type != VariableData::Type::STRING)
+    {
+        log_error(ctx.content, next_token.index, "File expects a string for the file path! (found variable type: %)", get_variable_type_name(file_path_var.type));
+        encountered_error = true;
+    }
+
+    // Check if file has already been tokenized
+    const auto& res = find(ctx.tokenized_files, file_path_var.string);
+    if (res)
+    {
+        tokens = res.value().tokens;
+        return res.value().encountered_error;
+    }
+
+    // Load file
+    TokenizedFile file = {};
+    file.content = file_load_string(file_path_var.string);
+    file.encountered_error = !tokenize(file.content, file.tokens);
+    put(ctx.tokenized_files, file_path_var.string, file);
+
+    tokens = file.tokens;
+    encountered_error = file.encountered_error;
+
+    return encountered_error;
+}
+
 // Returns true if any errors are encountered
 bool parse_format_tag(ParseContext& ctx)
 {
@@ -601,6 +652,9 @@ bool parse_format_tag(ParseContext& ctx)
     bool encountered_error = false;
     bool in_fmt_tag = true;
 
+    u64 var_stack_start_size = ctx.var_stack.size;
+    u64 op_stack_start_size  = ctx.op_stack.size;
+
     while (in_fmt_tag)
     {
         const Token& token = ctx.tokens[ctx.token_index];
@@ -608,7 +662,10 @@ bool parse_format_tag(ParseContext& ctx)
         {
             case Token::Type::FMT_END:
             {
-                clear(ctx.var_stack);
+                // Since it's all references or POD types so no need to free anything
+                ctx.var_stack.size = var_stack_start_size;
+                ctx.op_stack.size = op_stack_start_size;
+
                 in_fmt_tag = false;
                 ctx.token_index++;
             } break;
@@ -654,10 +711,95 @@ bool parse_format_tag(ParseContext& ctx)
             
             case Token::Type::FOR:
             {
+                ctx.token_index++;
+
+                VariableData* var;
+                encountered_error = get_variable(ctx, var);
+
+                Token next_token = ctx.tokens[ctx.token_index];
+
+                VariableData* index = {};
+                if (next_token.type == Token::Type::COMMA)
+                {
+                    // Need an index too
+                    ctx.token_index++;
+                    encountered_error = get_variable(ctx, index);
+                    index->type = VariableData::Type::INTEGER;
+
+                    next_token = ctx.tokens[ctx.token_index];
+                }
+
+                switch (next_token.type)
+                {
+                    case Token::Type::COLON:
+                    {
+                        ctx.token_index++;
+                        if (ctx.token_index >= ctx.tokens.size)
+                        {
+                            log_error(ctx.content, token.index, "For tag was never closed!");
+                            encountered_error = true;
+                            break;
+                        }
+                        
+                        VariableData* array_var;
+                        encountered_error = get_variable(ctx, array_var);
+
+                        if (array_var->type != VariableData::Type::ARRAY)
+                        {
+                            log_error(ctx.content, next_token.index, "For loops can only loop over arrays! (found variable type: %)", get_variable_type_name(array_var->type));
+                            encountered_error = true;
+                            break;
+                        }
+
+                        if (ctx.token_index >= ctx.tokens.size)
+                        {
+                            log_error(ctx.content, token.index, "For tag was never closed!");
+                            encountered_error = true;
+                            break;
+                        }
+
+                        next_token = ctx.tokens[ctx.token_index];
+                        if (next_token.type != Token::Type::TOKENS)
+                        {
+                            log_error(ctx.content, next_token.index, "For tag needs a fmt body to be executed every iteration of the loop");
+                            encountered_error = true;
+                            break;
+                        }
+
+                        DynamicArray<Token> loop_body = next_token.tokens;
+
+                        for (u64 i = 0; i < array_var->array.size; i++)
+                        {
+                            *var = array_var->array[i];
+
+                            if (index)
+                                index->integer = i;
+
+                            encountered_error = parse_tokens(create_sub_ctx_with_tokens(ctx, loop_body));
+                        }
+
+                        ctx.token_index++;
+                    } break;
+
+                    default:
+                    {
+                        log_error(ctx.content, next_token.index, "Variables can only be followed by '$>' or ':'");
+                        encountered_error = true;
+                        ctx.token_index++;
+                    } break;
+                }
             } break;
             
             case Token::Type::FILE:
             {
+                ctx.token_index++;
+                DynamicArray<Token> tokens;
+
+                encountered_error = get_file_tokens(ctx, tokens);
+                if (encountered_error)
+                    break;
+
+                encountered_error = parse_tokens(create_sub_ctx_with_tokens(ctx, tokens));
             } break;
 
             default:
@@ -713,6 +855,10 @@ bool parse_template(const String content, Pass& pass, StringBuilder& builder)
         resize(builder, max(2ui64, content.size / 10)); // Just an estimate
 
     ParseContext ctx = { content, builder, pass.tokens, &pass.root_var };
+
+    // Only need to create it once!
+    if (ctx.tokenized_files.capacity == 0)
+        ctx.tokenized_files = make<HashTable<String, TokenizedFile>>();
 
     clear(ctx.var_stack);
     if (ctx.var_stack.capacity <= 2)

@@ -19,7 +19,6 @@ struct VariableData
         BOOLEAN,
         INTEGER,
         STRING,
-        RANGE,
         ARRAY,
         OBJECT,
 
@@ -34,7 +33,6 @@ struct VariableData
         bool   boolean;
         s64    integer;
         String string;
-        struct { s64 start, end; } range;
         DynamicArray<VariableData> array;
         HashTable<String, VariableData> object;
         DynamicArray<Token> tokens;
@@ -51,7 +49,6 @@ static inline constexpr String get_variable_type_name(VariableData::Type type)
         declare_type_name(BOOLEAN);
         declare_type_name(INTEGER);
         declare_type_name(STRING);
-        declare_type_name(RANGE);
         declare_type_name(ARRAY);
         declare_type_name(OBJECT);
         declare_type_name(TOKENS);
@@ -81,9 +78,6 @@ static inline bool variable_equal(const VariableData& var1, const VariableData& 
         case VariableData::Type::STRING:
             return var1.string == var2.string;
         
-        case VariableData::Type::RANGE:
-            return var1.range.start == var2.range.start && var1.range.end == var2.range.end;
-
         case VariableData::Type::ARRAY:
         {
             if (var1.array.size != var2.array.size)

@@ -1,0 +1,145 @@
+{
+    "templates": [
+        {
+            "template": "<$ file character-select.template $>",
+            "output": "Character Select.html",
+            "passes": [ {} ]
+        },
+        {
+            "template": "<$ file character-portfolio.template $>",
+            "output": "<$ characters[params.index].name $>.html",
+            "passes": [
+                {
+                    "index": 0
+                },
+                {
+                    "index": 1
+                },
+                {
+                    "index": 2
+                },
+                {
+                    "index": 3
+                }
+            ]
+        }
+    ],
+    "characters": [
+        {
+            "name": "Game Developer",
+            "portrait-path": "img/avatars/Portraits/Portrait Game Developer.png",
+            "portrait-alt": "Game Developer Portrait",
+
+            "css-style-prefix": "game-developer",
+            "blurb": "A <span class=\"text_accent_light\">passionate game developer</span> from New Delhi, India. He is known to adapt to any kind of work quickly and learn new tools instantly.<br><br>He is your man if you want the job done quickly and efficiently.",
+            "stats": [
+                {
+                    "label": "Combat Design",
+                    "confidence": 60
+                },
+                {
+                    "label": "AI Design",
+                    "confidence": 69
+                },
+                {
+                    "label": "C/C++",
+                    "confidence": 90
+                },
+                {
+                    "label": "C#",
+                    "confidence": 78
+                },
+                {
+                    "label": "OpenGL",
+                    "confidence": 75
+                },
+                {
+                    "label": "Unity",
+                    "confidence": 80
+                },
+                {
+                    "label": "Data Structures",
+                    "confidence": 90
+                },
+                {
+                    "label": "GLSL/HLSL",
+                    "confidence": 65
+                }
+            ],
+            "vice": "Long Afternoon Naps",
+            "main-missions": [
+                {
+                    "name": "Mayanagari",
+                    "images": [],
+                    "date": "Ongoing",
+                    "difficulty": "hard",
+                    "brief": "Briefer",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                },
+                {
+                    "name": "Bump Pong",
+                    "images": [],
+                    "date": "10th Sept 2020",
+                    "difficulty": "medium",
+                    "brief": "Brief",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                }
+            ],
+            "side-missions": [
+                {
+                    "name": "Solar System Demo",
+                    "images": [],
+                    "date": "10th Sept 2021",
+                    "difficulty": "easy",
+                    "brief": "Briefer",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                },
+                {
+                    "name": "Hurry! Flurry",
+                    "images": [],
+                    "date": "10th Sept 2020",
+                    "difficulty": "medium",
+                    "brief": "Brief",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                }
+            ]
+        },
+        {
+            "name": "Film Maker",
+            "css-style-prefix": "film-maker",
+            "blurb": "An <span class=\"text_accent_light\">aspiring film-maker</span> from New Delhi, India. He is a master of deception and can whip up a story instantly.<br><br>His stories are so believable that even the police let him off every time.",
+            "stats": [
+                {
+                    "label": "Screenwriting",
+                    "confidence": 90
+                },
+                {
+                    "label": "Cinematography",
+                    "confidence": 90
+                },
+                {
+                    "label": "Video Editing",
+                    "confidence": 90
+                },
+                {
+                    "label": "Direction",
+                    "confidence": 90
+                },
+                {
+                    "label": "Colour Grading",
+                    "confidence": 90
+                }
+            ],
+            "vice": "Clumsy"
+        }
+    ],
+    "links": []
+}

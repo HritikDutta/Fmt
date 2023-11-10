@@ -1,0 +1,230 @@
+<$ // Loop over all characters for their cards in character select $>
+<$ for ch: characters {
+  <div class="slider_container">
+    <div class="character_panel">
+      <div class="avatar_big">
+        <img class="transition_on_load_horizontal pixel_perfect" src="<$ ch.portrait-path $>" alt="<$ ch.portrait-alt $>">
+      </div>
+      
+      <div class="window transition_on_load_horizontal">
+        <div class="window_body">
+          <div class="window_content">
+            <h1 class="text_accent_light with_stroke" value="<$ ch.name $>"><$ ch.name $></h1>
+            <p>
+              <$ ch.blurb $>
+            </p>
+            
+            <div class="character_stats">
+              <h2 class="text_accent_dark with_stroke" value="Character Stats">Character Stats</h2>
+              <div class="character_stats_grid">
+                <$ // Only show first 4 stats here $>
+                <$ for stat: ch.stats[0,4] {
+                  <div class="stat">
+                    <div class="positive">+</div> <$ stat.label $>
+                  </div>
+                } $>
+                
+                <div class="stat">
+                  <div class="negative">-</div> <$ ch.vice $>
+                </div>
+              </div>
+            </div>
+            
+            <div class="play_section">
+              <a class="glow_button" href="<$ ch.name $>.html">
+                <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
+                <span>Select</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+} $>
+
+<$ // Loop over all the missions and fill in the mission select window $>
+<$ character: characters[params.index] $>
+<div class="window transition_on_load_vertical" id="mission_select">
+  <div class="window_header">
+    <h2>Mission Select</h2>
+  </div>
+  <div class="window_body">
+    <div class="window_content">
+      <button class="options_list_toggle" id="mission_toggle" value="mission_options">
+        <h2><$ ch.projects[0].name $></h2>
+        <img class="option_toggle_arrow" src="img/icons/arrow-small-back.svg" alt="">
+      </button>
+      <div class="options_list" id="mission_options">
+        <$ mission_option_section_template: {
+          <$ for mission, mission_idx: missions {
+            <div class="option">
+              <input type="radio" autocomplete="off" class="option_radio_button" id="<$ mission_type_prefix $>_<$ mission_idx $>_radio" name="selected_mission" value="<$ mission_type_prefix $>_<$ mission_idx $>">
+              <label for="<$ mission_type_prefix $>_<$ mission_idx $>_radio" class="option_button">
+                <span><$ mission.name $></span>
+                <img class="option_select_arrow" src="img/icons/arrow-small-back.svg" alt="">
+              </label>
+            </div>
+          } $>
+        } $>
+        
+        <$ if character.main-missions {
+          <div class="option_section">
+            <h2 class="text_accent_dark with_stroke" value="Main Missions">Main Missions</h2>
+            <$ missions: character.main-missions $>
+            <$ mission_type_prefix: "main_mission" $>
+            <$ mission_option_section_template $>
+          </div>
+        } $>
+        
+        <$ if character.side-missions {
+          <div class="option_section">
+            <h2 class="text_accent_dark with_stroke" value="Side Missions">Side Missions</h2>
+            <$ missions: character.side-missions $>
+            <$ mission_type_prefix: "side_mission" $>
+            <$ mission_option_section_template $>
+          </div>
+        } $>
+      </div>
+      
+      <div class="vertical_line"></div>
+      
+      <div class="option_info_panel" id="mission_info_container">
+        <$ mission_info_template: {
+          <$ for mission, mission_idx: character.side-missions {
+            <div class="mission_info option_info" id="<$ mission_type_prefix $>_<$ mission_idx $>" data-updates-mission-cache>
+              <div class="option_info_container">
+                <h2><$ mission.name $></h2>
+                
+                <$ if mission.images {
+                  <div class="mission_images">
+                    <div class="nav_buttons">
+                      <button class="glow_button" id="nav_button_prev" onclick="sliderMoveToIndex(sliderTargetSelectionIndex - 1)">
+                        <img src="img/icons/arrow-big-right.svg" alt="">
+                      </button>
+                      
+                      <button class="glow_button" id="nav_button_next" onclick="sliderMoveToIndex(sliderTargetSelectionIndex + 1)">
+                        <img src="img/icons/arrow-big-right.svg" alt="">
+                      </button>
+                    </div>
+                    
+                    <div class="mission_images_content">
+                      <div class="slider_mask hide_scrollbar">
+                        <div class="slider">
+                          <$ for image_path: mission.images {
+                            <div class="slider_container image_container"><img src="<$ image_path $>" loading="lazy" alt=""></div>
+                          } $>
+                        </div>
+                      </div>
+                      
+                      <div class="image_lower_container">
+                        <span><$ mission.date $></span>
+                        <span class="difficulty_text">Difficulty: <$ mission.difficulty $></span>
+                        
+                        <!-- Slider dots need to be in front so they can be interacted with -->
+                        <span class="slider_dots">
+                          <$ for image_path, idx: mission.images {
+                            <input type="radio" autocomplete="off" class="slider_dot_radio image_slider_dot" name="<$ mission_type_prefix $>_<$ mission_idx $>_image" onchange="sliderMoveToIndex(<$ idx $>)" <$ if idx = 0 { checked } $>>
+                          } $>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                } $>
+                
+                <$ if mission.tags {
+                  <div class="mission_tags">
+                    <$ for tag: mission.tags {
+                      <div class="mission_tag">
+                        <div class="skill_icon">
+                          <$ tag.svg $>
+                        </div>
+                        <$ tag.label $>
+                      </div>
+                    } $>
+                  </div>
+                } $>
+                
+                <$ if mission.brief {
+                  <div class="mission_brief">
+                    <div class="mission_info_heading text_accent_dark">Mission Brief</div>
+                    <p>
+                      <$ mission.brief $>
+                    </p>
+                  </div>
+                } $>
+                
+                <div class="other_info">
+                  <$ if mission.challenges {
+                    <div class="challenges">
+                      <div class="mission_info_heading text_accent_dark">Challenges</div>
+                      <div class="challenge_list">
+                        <$ for challenge: mission.challenges {
+                          <div class="challenge"> <img class="challenge_checkbox" src="img/icons/Toggle On.png" alt=""><$ challenge $></div>
+                        } $>
+                      </div>
+                    </div>
+                  } $>
+                  
+                  <$ if mission.challenges & mission.rewards { <div class="vertical_line"></div> } $>
+                  
+                  <$ if mission.rewards {
+                    <div class="rewards">
+                      <div class="mission_info_heading text_accent_dark">Rewards</div>
+                      <table class="skill_points_table">
+                        <$ for reward: mission.rewards {
+                          <tr>
+                            <td><div class="skill_content">
+                              <div class="skill_icon">
+                                <$ reward.svg $>
+                              </div>
+                            </div></td>
+                            <td><div class="skill_content"><$ reward.label $></div></td>
+                          </tr>
+                        } $>
+                      </table>
+                    </div>
+                  } $>
+                </div>
+                
+                <div class="play_section">
+                  <a class="glow_button" href="https://play.google.com/store/apps/details?id=com.AFKStudios.HurryFlurry&pcampaignid=web_share" target="_blank">
+                    <div class="button_prompt xbox_button" id="xbox_button_a">A</div>
+                    <span>Play</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          } $>
+        } $>
+        
+        <$ if character.main-missions {
+          <$ mission_type_prefix: "main_mission" $>
+          <$ mission_info_template $>
+        } $>
+        
+        <$ if character.side-missions {
+          <$ mission_type_prefix: "side_mission" $>
+          <$ mission_info_template $>
+        } $>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="portfolio_description">
+    Hritik Dutta<br>
+    <$ character.name $> Portfolio
+  </div>
+  
+  <div class="resume_link_container">
+    <a href="<$ character.resume_path $>" target="_blank">Download <$ character.name $> Resume</a>
+  </div>
+  
+  <div class="links">
+    <$ for link: links {
+      <a href="<$ link.href $>" target="_blank"><img src="<$ link.image $>" alt="<$ link.label $>"></a>
+    } $>
+  </div>
+</div>

@@ -15,16 +15,9 @@
 namespace Fmt
 {
 
-struct TokenizedFile
-{
-    bool encountered_error;
-    String content;
-    DynamicArray<Token> tokens;
-};
-
 struct ParseContext
 {
-    const String content;
+    String content;
     StringBuilder& builder;
 
     DynamicArray<Token> tokens;
@@ -34,12 +27,13 @@ struct ParseContext
     DynamicArray<VariableData> var_stack;
     DynamicArray<Token> op_stack;
 
-    HashTable<String, TokenizedFile> tokenized_files;
+    HashTable<String, TokenList> tokenized_files;
 };
 
-static inline ParseContext create_sub_ctx_with_tokens(const ParseContext& ctx, const DynamicArray<Token>& tokens)
+static inline ParseContext create_sub_ctx(const ParseContext& ctx, const String content, const DynamicArray<Token>& tokens)
 {
     ParseContext sub_ctx = ctx;
+    sub_ctx.content = content;
     sub_ctx.tokens = tokens;
     sub_ctx.token_index = 0;
     return sub_ctx;
@@ -47,7 +41,7 @@ static inline ParseContext create_sub_ctx_with_tokens(const ParseContext& ctx, c
 
 static bool parse_tokens(ParseContext& ctx);
 static bool store_token_in_var(const Token& token, VariableData& var, ParseContext& ctx);
-static bool get_file_tokens(ParseContext& ctx, DynamicArray<Token>& tokens);
+static bool get_file(ParseContext& ctx, TokenList& out_file);
 
 static VariableData* get_variable_data(ParseContext& ctx)
 {
@@ -60,6 +54,7 @@ static VariableData* get_variable_data(ParseContext& ctx)
         // Variable doesn't exist yet!
         VariableData var;
         var.type = VariableData::Type::NONE;
+        var.name = token.string;
         return &(put(ctx.parent_var->object, token.string, var).value());
     }
 
@@ -131,6 +126,7 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                             }
 
                             VariableData end;
+                            end.string = ref("end");
                             end.type = VariableData::Type::INTEGER;
                             end.integer = out_var->array.size - 1;
                             
@@ -233,6 +229,7 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                             }
 
                             VariableData slice;
+                            slice.name = out_var->name;
                             slice.type = VariableData::Type::ARRAY;
                             slice.array.data = out_var->array.data + start.integer;
                             slice.array.size = end.integer - start.integer + 1;
@@ -289,6 +286,7 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
     {
         case Token::Type::STRING:
         {
+            var.string = get_token_type_name(token.type);
             var.type = VariableData::Type::STRING;
             var.string = token.string;
             ctx.token_index++;
@@ -296,6 +294,7 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
         
         case Token::Type::INTEGER:
         {
+            var.string = get_token_type_name(token.type);
             var.type = VariableData::Type::INTEGER;
             var.integer = token.integer;
             ctx.token_index++;
@@ -303,6 +302,7 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
         
         case Token::Type::BOOLEAN:
         {
+            var.string = get_token_type_name(token.type);
             var.type = VariableData::Type::BOOLEAN;
             var.integer = token.boolean;
             ctx.token_index++;
@@ -310,8 +310,10 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
 
         case Token::Type::TOKENS:
         {
-            var.type = VariableData::Type::TOKENS;
-            var.tokens = token.tokens;
+            var.string = get_token_type_name(token.type);
+            var.type = VariableData::Type::TOKEN_LIST;
+            var.token_list.tokens = token.tokens;
+            var.token_list.content = ctx.content;
             ctx.token_index++;
         } break;
         
@@ -326,8 +328,9 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
         {
             ctx.token_index++;
             
-            var.type = VariableData::Type::TOKENS;
-            encountered_error = get_file_tokens(ctx, var.tokens);
+            var.string = get_token_type_name(token.type);
+            var.type = VariableData::Type::TOKEN_LIST;
+            encountered_error = get_file(ctx, var.token_list);
         } break;
 
         default:
@@ -364,15 +367,22 @@ static bool append_variable(const ParseContext& ctx, const VariableData* var)
             append(ctx.builder, var->string);
         } break;
 
-        case VariableData::Type::TOKENS:
+        case VariableData::Type::TOKEN_LIST:
         {
-            encountered_error = parse_tokens(create_sub_ctx_with_tokens(ctx, var->tokens));
+            encountered_error = parse_tokens(create_sub_ctx(ctx, var->token_list.content, var->token_list.tokens));
+        } break;
+
+        case VariableData::Type::NONE:
+        {
+            const Token& current_token = ctx.tokens[ctx.token_index];
+            log_error(ctx.content, current_token.index, "Variable '%' doesn't exist!", var->name);
+            encountered_error = true;
         } break;
 
         default:
         {
             const Token& current_token = ctx.tokens[ctx.token_index];
-            log_error(ctx.content, current_token.index, "Can't convert variable of % type to string for formatting!", get_variable_type_name(var->type));
+            log_error(ctx.content, current_token.index, "Can't convert variable of % type to string for formatting! (variable: %)", get_variable_type_name(var->type), var->name);
             encountered_error = true;
         } break;
     }
@@ -612,7 +622,7 @@ inline bool parse_decision_tree(ParseContext& ctx, DynamicArray<Token>& out_toke
     return encountered_error;
 }
 
-static bool get_file_tokens(ParseContext& ctx, DynamicArray<Token>& tokens)
+static bool get_file(ParseContext& ctx, TokenList& out_file)
 {
     Token next_token = ctx.tokens[ctx.token_index];
     VariableData file_path_var;
@@ -628,20 +638,17 @@ static bool get_file_tokens(ParseContext& ctx, DynamicArray<Token>& tokens)
     const auto& res = find(ctx.tokenized_files, file_path_var.string);
     if (res)
     {
-        tokens = res.value().tokens;
-        return res.value().encountered_error;
+        out_file = res.value();
+        return out_file.encountered_error;
     }
 
     // Load file
-    TokenizedFile file = {};
+    TokenList file = {};
     file.content = file_load_string(file_path_var.string);
     file.encountered_error = !tokenize(file.content, file.tokens);
-    put(ctx.tokenized_files, file_path_var.string, file);
+    out_file = put(ctx.tokenized_files, file_path_var.string, file).value();
 
-    tokens = file.tokens;
-    encountered_error = file.encountered_error;
-
-    return encountered_error;
+    return out_file.encountered_error;
 }
 
 // Returns true if any errors are encountered
@@ -706,7 +713,7 @@ bool parse_format_tag(ParseContext& ctx)
             {
                 DynamicArray<Token> execute_tokens;
                 encountered_error = parse_decision_tree(ctx, execute_tokens);
-                encountered_error = parse_tokens(create_sub_ctx_with_tokens(ctx, execute_tokens));
+                encountered_error = parse_tokens(create_sub_ctx(ctx, ctx.content, execute_tokens));
             } break;
             
             case Token::Type::FOR:
@@ -775,7 +782,7 @@ bool parse_format_tag(ParseContext& ctx)
                             if (index)
                                 index->integer = i;
 
-                            encountered_error = parse_tokens(create_sub_ctx_with_tokens(ctx, loop_body));
+                            encountered_error = parse_tokens(create_sub_ctx(ctx, ctx.content, loop_body));
                         }
 
                         ctx.token_index++;
@@ -793,13 +800,13 @@ bool parse_format_tag(ParseContext& ctx)
             case Token::Type::FILE:
             {
                 ctx.token_index++;
-                DynamicArray<Token> tokens;
 
-                encountered_error = get_file_tokens(ctx, tokens);
+                TokenList file;
+                encountered_error = get_file(ctx, file);
                 if (encountered_error)
                     break;
 
-                encountered_error = parse_tokens(create_sub_ctx_with_tokens(ctx, tokens));
+                encountered_error = parse_tokens(create_sub_ctx(ctx, file.content, file.tokens));
             } break;
 
             default:
@@ -858,7 +865,7 @@ bool parse_template(const String content, Pass& pass, StringBuilder& builder)
 
     // Only need to create it once!
     if (ctx.tokenized_files.capacity == 0)
-        ctx.tokenized_files = make<HashTable<String, TokenizedFile>>();
+        ctx.tokenized_files = make<HashTable<String, TokenList>>();
 
     clear(ctx.var_stack);
     if (ctx.var_stack.capacity <= 2)

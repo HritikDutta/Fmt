@@ -270,7 +270,7 @@ bool tokenize(const String content, DynamicArray<Token>& tokens, u64& current_in
                     // Identifiers can only start with alphabets, dashes, and underscores
                     if (!is_valid_identifier_char(content[current_index]))
                     {
-                        log_error(content, current_index, "Encountered invalid token! (found token: '%'), content[current_index]");
+                        log_error(content, current_index, "Encountered invalid token! (found token: '%')");
                         encountered_error = true;
                         current_index++;
                         break;
@@ -339,8 +339,8 @@ bool tokenize(const String content, DynamicArray<Token> &tokens)
     u64 current_index = 0;
     bool error = tokenize(content, tokens, current_index, '\0');
 
-    for (u64 i = 0; i < tokens.size; i++)
-        print_token(0, tokens[i]);
+    // for (u64 i = 0; i < tokens.size; i++)
+    //     print_token(0, tokens[i]);
         
     return !error;
 }

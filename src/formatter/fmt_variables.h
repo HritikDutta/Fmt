@@ -10,6 +10,13 @@
 namespace Fmt
 {
 
+struct TokenList
+{
+    bool encountered_error;
+    String content;
+    DynamicArray<Token> tokens;
+};
+
 struct VariableData
 {
     enum struct Type : u8
@@ -22,12 +29,13 @@ struct VariableData
         ARRAY,
         OBJECT,
 
-        TOKENS,
+        TOKEN_LIST,
 
         NUM_TYPES
     };
 
     Type type;
+    String name;
     union
     {
         bool   boolean;
@@ -35,7 +43,7 @@ struct VariableData
         String string;
         DynamicArray<VariableData> array;
         HashTable<String, VariableData> object;
-        DynamicArray<Token> tokens;
+        TokenList token_list;
     };
 };
 
@@ -51,7 +59,7 @@ static inline constexpr String get_variable_type_name(VariableData::Type type)
         declare_type_name(STRING);
         declare_type_name(ARRAY);
         declare_type_name(OBJECT);
-        declare_type_name(TOKENS);
+        declare_type_name(TOKEN_LIST);
     }
 
     #undef declare_type_name
@@ -92,9 +100,10 @@ static inline bool variable_equal(const VariableData& var1, const VariableData& 
             return true;
         }
 
-        case VariableData::Type::TOKENS:
+        case VariableData::Type::TOKEN_LIST:
             // Just check whether both variables point to the same tokens array
-            return var1.tokens.data == var2.tokens.data && var1.tokens.size == var2.tokens.size;
+            return var1.token_list.tokens.data == var2.token_list.tokens.data &&
+                   var1.token_list.tokens.size == var2.token_list.tokens.size;
     }
 
     // It's not ideal

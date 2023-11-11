@@ -2,46 +2,101 @@
     "templates": [
         {
             "template": "<$ file \"tests/template_example.html\" $>",
-            "output": "out.txt",
+            "output": "tests\\output\\<$ characters[params.selected-index].css-style-prefix $>.html",
             "passes": [
                 {
-                    "word": "World",
-                    "data": { "index": 0 }
+                    "selected-index": 0
                 }
             ]
         }
     ],
-
     "characters": [
         {
-            "name": "Game Developer"
-        },
-        {
-            "name": "Film Maker"
-        },
-        {
-            "name": "Photographer"
-        },
-        {
-            "name": "Programmer"
-        },
-        {
-            "name": "2342"
-        },
-        {
-            "name": "23423526"
-        },
-        {
-            "name": "12"
-        },
-        {
-            "name": "8"
-        },
-        {
-            "name": "347"
-        },
-        {
-            "name": "Prgra479789mmer"
+            "name": "Game Developer",
+            "portrait": "img/avatars/Portraits/Portrait Game Developer.png",
+
+            "css-style-prefix": "game-developer",
+            "blurb": "A <span class=\"text_accent_light\">passionate game developer</span> from New Delhi, India. He is known to adapt to any kind of work quickly and learn new tools instantly.<br><br>He is your man if you want the job done quickly and efficiently.",
+            "stats": [
+                {
+                    "label": "Combat Design",
+                    "confidence": 60
+                },
+                {
+                    "label": "AI Design",
+                    "confidence": 69
+                },
+                {
+                    "label": "C/C++",
+                    "confidence": 90
+                },
+                {
+                    "label": "C#",
+                    "confidence": 78
+                },
+                {
+                    "label": "OpenGL",
+                    "confidence": 75
+                },
+                {
+                    "label": "Unity",
+                    "confidence": 80
+                },
+                {
+                    "label": "Data Structures",
+                    "confidence": 90
+                },
+                {
+                    "label": "GLSL/HLSL",
+                    "confidence": 65
+                }
+            ],
+            "vice": "Long Afternoon Naps",
+            "main-missions": [
+                {
+                    "name": "Mayanagari",
+                    "images": [],
+                    "date": "Ongoing",
+                    "difficulty": "hard",
+                    "brief": "Briefer",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                },
+                {
+                    "name": "Bump Pong",
+                    "images": [],
+                    "date": "10th Sept 2020",
+                    "difficulty": "medium",
+                    "brief": "Brief",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                }
+            ],
+            "side-missions": [
+                {
+                    "name": "Solar System Demo",
+                    "images": [],
+                    "date": "10th Sept 2021",
+                    "difficulty": "easy",
+                    "brief": "Briefer",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                },
+                {
+                    "name": "Hurry! Flurry",
+                    "images": [],
+                    "date": "10th Sept 2020",
+                    "difficulty": "medium",
+                    "brief": "Brief",
+                    "tags": [],
+                    "challenges": [],
+                    "rewards": []
+                }
+            ]
         }
-    ]
+    ],
+    "links": []
 }

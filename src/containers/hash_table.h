@@ -322,6 +322,7 @@ HashTableElement<KeyType, ValueType, Hasher> put(HashTable<KeyType, ValueType, H
                 if (hash == table.hashes[i] &&
                     key  == table.keys[i])
                 {
+                    table.values[i] = value;
                     return HashTableElement { &table, i };
                 }
             } break;

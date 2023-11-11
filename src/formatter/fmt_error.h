@@ -25,7 +25,7 @@ inline void line_number(const String str, u64 index, u64& out_line, u64& out_col
 
 #ifdef GN_DEBUG
 #include "core/logger.h"
-#define log_error(content, index, fmt, ...) { u64 line, col; line_number(content, index, line, col); print_error("Fmt Error[%, %]: " fmt "\n", line, col, __VA_ARGS__); }
+#define log_error(content, index, fmt, ...) { u64 line, col; line_number(content, index, line, col); print_error("Fmt Error[%, %]: " fmt "\n", line, col, __VA_ARGS__); gn_break_point(); }
 #else
 #define log_error(content, index, fmt, ...)
 #endif // GN_DEBUG

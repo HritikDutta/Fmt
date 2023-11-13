@@ -374,6 +374,9 @@ bool tokenize(const String content, DynamicArray<Token> &tokens)
                 append(tokens, token);
                 
                 current_index++;
+
+                indentation++; // Cause dashes should be ignored for indentation
+                eat_spaces_and_get_indentation(content, current_index, indentation, line);
                 continue;
             }
 
@@ -398,12 +401,15 @@ bool tokenize(const String content, DynamicArray<Token> &tokens)
                     const u64 index = current_index + actual_size;
 
                     // Eat till the next new line or EOF
-                    if (index >= content.size || content[index] == '\n' || is_reserved_char(content[index]))
+                    if (index >= content.size || content[index] == '\n')
                         break;
 
                     // Key value pair colon
                     if (content[index] == ':' && (index + 1 >= content.size || is_white_space(content[index + 1])))
+                    {
+                        force_key = true;
                         break;
+                    }
 
                     if (content[index] == '#' && (index == 0 || is_white_space(content[index - 1])))
                         break;

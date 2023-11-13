@@ -172,7 +172,7 @@ static Slz::ResourceIndex parse_next(const DynamicArray<Token>& tokens, ParserCo
 
         case Token::Type::KEY:
         {
-            if (token.line <= indent_ctx.line)
+            if (token.line < indent_ctx.line)
             {
                 log_error(context.content, token.index, "Object member can't start at the same line as the parent!");
                 context.encountered_error = true;

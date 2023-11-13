@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     String content = file_load_string(ref(argv[1]));
     #else
-    String content = file_load_string(ref("tests/test_template.json"));
+    String content = file_load_string(ref("tests/template.yaml"));
     #endif
 
     Slz::Document document = {};

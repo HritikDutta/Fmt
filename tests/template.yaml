@@ -1,0 +1,32 @@
+templates:
+  - template: <$ file "tests/template_example.html" $>
+    output: "tests/output/<$ characters[params.selected-index].css-style-prefix $>.html"
+    passes:
+      - selected-index: 0
+characters:
+  - name: Game Developer
+    css-style-prefix: game-developer
+
+    # Visuals and flavour text
+    portrait: img/avatars/Portraits/Portrait Game Developer.png
+    blurb: A <span class="text_accent_light">passionate game developer</span> from New Delhi, India. He is known to adapt to any kind of work quickly and learn new tools instantly.<br><br>He is your man if you want the job done quickly and efficiently.
+    vice: Long Afternoon Naps
+
+    stats:
+      - label: Combat Design
+        confidence: 60
+      - label: AI Design
+        confidence: 69
+      - label: C/C++
+        confidence: 90
+      - label: C#
+        confidence: 75
+      - label: OpenGL
+        confidence: 75
+      - label: Unity
+        confidence: 80
+      - label: Data Structures
+        confidence: 90
+      - label: GLSL/HLSL
+        confidence: 65
+links: []

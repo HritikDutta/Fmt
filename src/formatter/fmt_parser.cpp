@@ -645,7 +645,11 @@ static bool get_file(ParseContext& ctx, TokenList& out_file)
     // Load file
     TokenList file = {};
     file.content = file_load_string(file_path_var.string);
-    file.encountered_error = !tokenize(file.content, file.tokens);
+    if (file.content.data)
+        file.encountered_error = !tokenize(file.content, file.tokens);
+    else
+        file.encountered_error = true;
+    
     out_file = put(ctx.tokenized_files, file_path_var.string, file).value();
 
     return out_file.encountered_error;

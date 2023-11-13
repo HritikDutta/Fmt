@@ -17,6 +17,9 @@ int main(int argc, char** argv)
     }
 
     String content = file_load_string(ref(argv[1]));
+
+    if (!content.data)
+        return 1;
     #else
     String content = file_load_string(ref("tests/template.yaml"));
     #endif

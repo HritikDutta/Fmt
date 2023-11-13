@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     #ifndef GN_DEBUG
     if (argc < 2)
     {
-        print_error("Need a json file to format");
+        print_error("Need a json/yaml file to format");
         return 1;
     }
 

@@ -39,6 +39,8 @@ rem cl %compile_flags% /c src/engine/*.cpp %defines% %includes%               &^
 rem cl %compile_flags% /c src/audio/*.cpp %defines% %includes%                &^
 
 cl %compile_flags% /c src/serialization/json/*.cpp %defines% %includes%   &^
+cl %compile_flags% /c src/serialization/slz/*.cpp %defines% %includes%    &^
+cl %compile_flags% /c src/serialization/yaml/*.cpp %defines% %includes%   &^
 cl %compile_flags% /c src/serialization/binary/*.cpp %defines% %includes% &^
 cl %compile_flags% /c src/fileio/*.cpp %defines% %includes%               &^
 cl %compile_flags% /c src/graphics/*.cpp %defines% %includes%             &^

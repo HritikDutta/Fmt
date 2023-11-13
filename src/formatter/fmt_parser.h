@@ -19,8 +19,8 @@ struct Pass
     DynamicArray<Token> tokens;
 };
 
-void prepare_data(Pass& pass, const Json::Value& base_data);
-void prepare_pass(Pass& pass, const Json::Value& params);
+void prepare_data(Pass& pass, const Slz::Value& base_data);
+void prepare_pass(Pass& pass, const Slz::Value& params);
 
 bool parse_template(const String content, Pass& pass, StringBuilder& builder);
 

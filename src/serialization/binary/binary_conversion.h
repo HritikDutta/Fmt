@@ -1,11 +1,11 @@
 #pragma once
 
 #include "containers/bytes.h"
-#include "serialization/json.h"
+#include "serialization/slz.h"
 
 namespace Binary
 {
 
-Bytes json_document_to_binary(const Json::Document& document);
+Bytes json_document_to_binary(const Slz::Document& document);
 
 } // namespace Binary

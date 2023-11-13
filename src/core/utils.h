@@ -27,3 +27,8 @@ inline static bool is_digit(char ch)
 {
     return (ch >= '0') && (ch <= '9');
 }
+
+inline static bool is_white_space(char ch)
+{
+    return ch == ' '  || ch == '\t' || ch == '\r' || ch == '\n';
+}

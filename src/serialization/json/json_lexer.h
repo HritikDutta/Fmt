@@ -24,8 +24,6 @@ struct Token
         BRACE_CLOSE   = '}',
         COLON         = ':',
         COMMA         = ',',
-
-        NUM_TYPES
     };
 
     Type type;
@@ -33,6 +31,6 @@ struct Token
     String value;   // Not owned
 };
 
-bool lex(const String content, DynamicArray<Token>& tokens);
+bool tokenize(const String content, DynamicArray<Token>& tokens);
 
 } // namespace Json

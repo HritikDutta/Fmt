@@ -1,7 +1,8 @@
 #include "core/logger.h"
 #include "containers/string.h"
 #include "fileio/fileio.h"
-#include "serialization/json.h"
+#include "serialization/slz.h"
+#include "serialization/yaml.h"
 
 #include "formatter/fmt_lexer.h"
 #include "formatter/fmt_parser.h"
@@ -20,16 +21,18 @@ int main(int argc, char** argv)
     String content = file_load_string(ref("tests/test_template.json"));
     #endif
 
-    Json::Document document = {};
+    Slz::Document document = {};
     
-    if (!Json::parse_string(content, document))
+    // Ideally I should check the extension or something to select yaml or json parser.
+    // But the yaml parser can parse any valid json string so this should work fine.
+    if (!Yaml::parse_string(content, document))
     {
         print_error("Couldn't parse template json!");
         return 1;
     }
 
-    Json::Object start = document.start().object();
-    Json::Array templates = start[ref("templates")].array();
+    Slz::Object start = document.start().object();
+    Slz::Array templates = start[ref("templates")].array();
 
     Fmt::Pass pass = {};
     Fmt::prepare_data(pass, document.start());
@@ -41,7 +44,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < templates.size(); i++) 
     {
-        Json::Object template_data = templates[i].object();
+        Slz::Object template_data = templates[i].object();
         const String template_content = template_data[ref("template")].string();
         const String file_path_content = template_data[ref("output")].string();
 
@@ -57,7 +60,7 @@ int main(int argc, char** argv)
             continue; // Move on to next template
         }
 
-        Json::Array passes = template_data[ref("passes")].array();
+        Slz::Array passes = template_data[ref("passes")].array();
         for (int pass_idx = 0; pass_idx < passes.size(); pass_idx++)
         {
             Fmt::prepare_pass(pass, passes[pass_idx]);

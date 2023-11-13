@@ -7,28 +7,28 @@
 #include "containers/darray.h"
 #include "containers/bytes.h"
 #include "containers/string.h"
-#include "serialization/json.h"
+#include "serialization/slz.h"
 #include "binary_types.h"
 #include "binary_utils.h"
 
 namespace Binary
 {
 
-static void encode_json_value_to_binary(DynamicArray<u8>& bytes, Json::Value value)
+static void encode_slz_value_to_binary(DynamicArray<u8>& bytes, Slz::Value value)
 {
     switch (value.type())
     {
-        case Json::Type::NONE:
+        case Slz::Type::NONE:
         {
             append(bytes, NIL);
         } break;
         
-        case Json::Type::BOOLEAN:
+        case Slz::Type::BOOLEAN:
         {
             append(bytes, value.boolean() ? BOOLEAN_TRUE : BOOLEAN_FALSE);
         } break;
 
-        case Json::Type::INTEGER:
+        case Slz::Type::INTEGER:
         {
             const s64 int_value = value.int64();
 
@@ -55,7 +55,7 @@ static void encode_json_value_to_binary(DynamicArray<u8>& bytes, Json::Value val
             }
         } break;
 
-        case Json::Type::FLOAT:
+        case Slz::Type::FLOAT:
         {
             const f64 float_value = value.float64();
 
@@ -72,15 +72,15 @@ static void encode_json_value_to_binary(DynamicArray<u8>& bytes, Json::Value val
             }
         } break;
         
-        case Json::Type::STRING:
+        case Slz::Type::STRING:
         {
             const String str = value.string();
             append_string(bytes, str);
         } break;
         
-        case Json::Type::ARRAY:
+        case Slz::Type::ARRAY:
         {
-            const Json::Array array = value.array();
+            const Slz::Array array = value.array();
 
             // encode array length
             if (array.size() <= 0xffu)
@@ -107,26 +107,26 @@ static void encode_json_value_to_binary(DynamicArray<u8>& bytes, Json::Value val
             // encode array data
             for (u64 i = 0; i < array.size(); i++)
             {
-                encode_json_value_to_binary(bytes, array[i]);
+                encode_slz_value_to_binary(bytes, array[i]);
             }
         } break;
         
-        case Json::Type::OBJECT:
+        case Slz::Type::OBJECT:
         {
             append(bytes, OBJECT_START);
 
-            const Json::Object object = value.object();
-            const Json::Document* document = object.document;
-            const Json::ObjectNode object_node = document->dependency_tree[object.tree_index].object;
+            const Slz::Object object = value.object();
+            const Slz::Document* document = object.document;
+            const Slz::ObjectNode object_node = document->dependency_tree[object.tree_index].object;
 
             u32 encoded_count = 0;
             for (u32 i = 0; encoded_count < object_node.filled && i < object_node.capacity; i++)
             {
-                if (object_node.states[i] == Json::ObjectNode::State::ALIVE)
+                if (object_node.states[i] == Slz::ObjectNode::State::ALIVE)
                 {
                     // append_string(bytes, object_node.keys[i]);
-                    Json::Value property = { document, object_node.values[i] };
-                    encode_json_value_to_binary(bytes, property);
+                    Slz::Value property = { document, object_node.values[i] };
+                    encode_slz_value_to_binary(bytes, property);
                     encoded_count++;
                 }
             }
@@ -136,11 +136,11 @@ static void encode_json_value_to_binary(DynamicArray<u8>& bytes, Json::Value val
     }
 }
 
-Bytes json_document_to_binary(const Json::Document& document)
+Bytes slz_document_to_binary(const Slz::Document& document)
 {
     DynamicArray<u8> output = make<DynamicArray<u8>>(1024ui64);
 
-    encode_json_value_to_binary(output, document.start());
+    encode_slz_value_to_binary(output, document.start());
 
     resize(output, output.size);  // Shrink the array to free extra memory
 

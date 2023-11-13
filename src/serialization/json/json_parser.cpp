@@ -1,11 +1,13 @@
 #include "json_parser.h"
 
+#define SLZ_ERROR_PREFIX "Json"
+
 #include "core/types.h"
 #include "core/logger.h"
-#include "json_debug_output.h"
-#include "json_document.h"
+#include "serialization/slz/slz_debug_output.h"
+#include "serialization/slz/slz_error.h"
+#include "serialization/slz.h"
 #include "json_lexer.h"
-#include "json_result.h"
 
 namespace Json
 {
@@ -17,9 +19,9 @@ struct ParserContext
     bool encountered_error;
 };
 
-static inline bool is_token_a_value(Token::Type type)
+static inline bool is_token_a_value(const ParserContext& context, const Token& token)
 {
-    switch (type)
+    switch (token.type)
     {
         case Token::Type::IDENTIFIER:
         case Token::Type::INTEGER:
@@ -36,24 +38,24 @@ static inline bool is_token_a_value(Token::Type type)
             return false;
 
         default:
-            log_error("Incorrect token type! (found: '%')", (s32) type);
+            log_error(context.content, token.index,"Incorrect token type! (found: '%')", (s32) token.type);
     }
 
     return false;
 }
 
-static String copy_and_escape(const String source, ParserContext& context)
+static String copy_and_escape(const Token& source_token, ParserContext& context)
 {
-    DynamicArray<char> result = make<DynamicArray<char>>(source.size);
+    DynamicArray<char> result = make<DynamicArray<char>>(source_token.value.size);
 
-    for (u64 i = 0; i < source.size; i++)
+    for (u64 i = 0; i < source_token.value.size; i++)
     {
-        char ch = source[i];
+        char ch = source_token.value[i];
 
         if (ch == '\\')
         {
             i++;
-            switch (source[i])
+            switch (source_token.value[i])
             {
                 case 'b':  ch = '\b'; break;
                 case 'f':  ch = '\f'; break;
@@ -65,7 +67,7 @@ static String copy_and_escape(const String source, ParserContext& context)
 
                 default:
                 {
-                    log_error("Unexpected escape character! (character: '\\%', line: %)", ch, line_number(context.content, context.current_index));
+                    log_error(context.content, source_token.index, "Unexpected escape character! (character: '\\%')", source_token.value[i]);
                     context.encountered_error = true;
                 } break;
             }
@@ -77,11 +79,11 @@ static String copy_and_escape(const String source, ParserContext& context)
     return String { result.data, result.size };
 }
 
-static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context, Document& out)
+static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context, Slz::Document& out)
 {
     if (context.current_index > tokens.size)
     {
-        log_error("Json data is incomplete! (Parser ran out of tokens)");
+        log_error(context.content, tokens.size - 1, "Json data is incomplete! (Parser ran out of tokens)");
         context.encountered_error = true;
         return;
     }
@@ -91,59 +93,52 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
     {
         case Token::Type::STRING:
         {
-            ResourceIndex index = out.resources.size;
-
-            Resource res = {};
-            res.string = copy_and_escape(token.value, context);
-            append(out.resources, res);
-
-            DependencyNode node = {};
-            node.index = index;
-            node.type  = Type::STRING;
+            Slz::DependencyNode node = {};
+            node.index = out.resources.size;
+            node.type  = Slz::Type::STRING;
             append(out.dependency_tree, node);
 
+            Slz::Resource res = {};
+            res.string = copy_and_escape(token, context);
+            append(out.resources, res);
         } break;
 
         case Token::Type::INTEGER:
         {
-            ResourceIndex index = out.resources.size;
+            Slz::DependencyNode node = {};
+            node.index = out.resources.size;
+            node.type  = Slz::Type::INTEGER;
+            append(out.dependency_tree, node);
 
             // TODO: convert string to integer on your own with error checking
-            Resource res = {};
+            Slz::Resource res = {};
             res.integer64 = _atoi64(token.value.data);
             append(out.resources, res);
-
-            DependencyNode node = {};
-            node.index = index;
-            node.type  = Type::INTEGER;
-            append(out.dependency_tree, node);
         } break;
 
         case Token::Type::FLOAT:
         {
-            ResourceIndex index = out.resources.size;
+            Slz::DependencyNode node = {};
+            node.index = out.resources.size;
+            node.type  = Slz::Type::FLOAT;
+            append(out.dependency_tree, node);
 
             // TODO: convert string to float on your own with error checking
-            Resource res = {};
+            Slz::Resource res = {};
             res.float64 = atof(token.value.data);
             append(out.resources, res);
-
-            DependencyNode node = {};
-            node.index = index;
-            node.type  = Type::FLOAT;
-            append(out.dependency_tree, node);
         } break;
 
         case Token::Type::IDENTIFIER:
         {
-            ResourceIndex index = out.resources.size;
-            Type node_type = Type::BOOLEAN;
+            Slz::ResourceIndex index = out.resources.size;
+            Slz::Type node_type = Slz::Type::BOOLEAN;
 
             {   // Determine type of resource
                 if (token.value == ref("null", 4))
                 {
                     // Point to null value in dependency tree
-                    node_type = Type::NONE;
+                    node_type = Slz::Type::NONE;
                     index = 0;
                 }
                 else if (token.value == ref("true", 4))
@@ -153,18 +148,18 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
                 }
                 else if (token.value == ref("false", 5))
                 {
-                    // Point to true value in dependency tree
+                    // Point to false value in dependency tree
                     index = 1;
                 }
                 else
                 {
                     // Can't identify the identifier, lol
-                    log_error("Identifiers can only be true, false, or null! (found: '%', line: %)", token.value, line_number(context.content, token.index));
+                    log_error(context.content, token.index, "Identifiers can only be true, false, or null! (found: '%')", token.value);
                     context.encountered_error = true;
                 }
             }
 
-            DependencyNode node = {};
+            Slz::DependencyNode node = {};
             node.index = index;
             node.type  = node_type;
             append(out.dependency_tree, node);
@@ -174,9 +169,9 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
         {
             u64 array_tree_index = out.dependency_tree.size;
 
-            DependencyNode node = {};
-            node.array = make<ArrayNode>();
-            node.type  = Type::ARRAY;
+            Slz::DependencyNode node = {};
+            node.array = make<Slz::ArrayNode>();
+            node.type  = Slz::Type::ARRAY;
             append(out.dependency_tree, node);
 
             // Skip the first [
@@ -186,7 +181,7 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
             {
                 if (context.current_index >= tokens.size)
                 {
-                    log_error("Array was never closed with a ]! (line: %)", line_number(context.content, token.index));
+                    log_error(context.content, tokens[context.current_index - 1].index, "Array was never closed with a ]!");
                     context.encountered_error = true;
                     break;
                 }
@@ -200,7 +195,7 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
 
                 if (context.current_index >= tokens.size)
                 {
-                    log_error("Array was never closed with a ]! (line: %)", line_number(context.content, token.index));
+                    log_error(context.content, tokens[context.current_index - 1].index, "Array was never closed with a ]!");
                     context.encountered_error = true;
                     break;
                 }
@@ -213,11 +208,11 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
 
                 if (current_token.type != Token::Type::COMMA)
                 {
-                    log_error("Array items must be separated by commas! (found: '%', line: %)", current_token.value, line_number(context.content, current_token.index));
+                    log_error(context.content, current_token.index, "Array items must be separated by commas! (found: '%')", current_token.value);
                     context.encountered_error = true;
 
                     // Don't skip over values. Helps with error checking.
-                    if (is_token_a_value(current_token.type))
+                    if (is_token_a_value(context, current_token))
                         context.current_index--;
                 }
 
@@ -231,9 +226,9 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
         {
             u64 object_tree_index = out.dependency_tree.size;
 
-            DependencyNode node = {};
-            node.object = make<ObjectNode>();
-            node.type  = Type::OBJECT;
+            Slz::DependencyNode node = {};
+            node.object = make<Slz::ObjectNode>();
+            node.type  = Slz::Type::OBJECT;
             append(out.dependency_tree, node);
 
             // Skip the first {
@@ -243,7 +238,7 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
             {
                 if (context.current_index >= tokens.size)
                 {
-                    log_error("Object was never closed with a }! (line: %)", line_number(context.content, token.index));
+                    log_error(context.content, tokens[context.current_index - 1].index, "Object was never closed with a }!");
                     context.encountered_error = true;
                     break;
                 }
@@ -256,7 +251,7 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
 
                 if (key_token.type != Token::Type::STRING)
                 {
-                    log_error("Expected a key for object! (found: '%', line: %)", key_token.value, line_number(context.content, key_token.index));
+                    log_error(context.content, key_token.index, "Expected a key for object! (found: '%')", key_token.value);
                     context.encountered_error = true;
                 }
 
@@ -266,15 +261,15 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
                 // Key should be followed by a :
                 if (colon_token.type != Token::Type::COLON)
                 {
-                    log_error("Expected : after key in object! (found: '%', line: %)", colon_token.value, line_number(context.content, colon_token.index));
+                    log_error(context.content, colon_token.index, "Expected : after key in object! (found: '%')", colon_token.value);
                     context.encountered_error = true;
 
                     // Don't skip over values. Helps with error checking.
-                    if (is_token_a_value(colon_token.type))
+                    if (is_token_a_value(context, colon_token))
                         context.current_index--;
                 }
 
-                String key_string = copy_and_escape(key_token.value, context);
+                String key_string = copy_and_escape(key_token, context);
                 put(out.dependency_tree[object_tree_index].object, key_string, out.dependency_tree.size);
 
                 context.current_index++;
@@ -282,7 +277,7 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
 
                 if (context.current_index >= tokens.size)
                 {
-                    log_error("Object was never closed with a }! (line: %)", line_number(context.content, token.index));
+                    log_error(context.content, tokens[context.current_index - 1].index, "Object was never closed with a }!");
                     context.encountered_error = true;
                     break;
                 }
@@ -294,11 +289,11 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
                 
                 if (next_token.type != Token::Type::COMMA)
                 {
-                    log_error("Object properties must be separated by commas! (found: '%', line: %)", next_token.value, line_number(context.content, next_token.index));
+                    log_error(context.content, next_token.index, "Object properties must be separated by commas! (found: '%')", next_token.value);
                     context.encountered_error = true;
 
                     // Don't skip over values. Helps with error checking.
-                    if (is_token_a_value(next_token.type))
+                    if (is_token_a_value(context, next_token))
                         context.current_index--;
                 }
 
@@ -311,7 +306,7 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
         default:
         {
             // The only remaining tokens are single character punctuations
-            log_error("Expected a value (identifier, number, string, array, or object), got %", (char) token.type);
+            log_error(context.content, token.index, "Expected a value (identifier, number, string, array, or object), got %", (char) token.type);
             context.encountered_error = true;
         } break;
     }
@@ -319,23 +314,29 @@ static void parse_next(const DynamicArray<Token>& tokens, ParserContext& context
     context.current_index++;
 }
 
-bool parse_tokens(const DynamicArray<Token>& tokens, const String content, Document& out)
+bool parse_tokens(const DynamicArray<Token>& tokens, const String content, Slz::Document& out)
 {
     gn_assert_with_message(tokens.data, "Tokens array points to null!");
-    gn_assert_with_message(out.dependency_tree.size == 0, "Output json document struct is not empty! (number of elements: %)", out.dependency_tree.size);
+    gn_assert_with_message(out.dependency_tree.size == 0, "Output json Slz::Document struct is not empty! (number of elements: %)", out.dependency_tree.size);
 
     {   // Add the null element
         // If user tries to access an object property that wasn't in the file,
         // then the value will point to this element
-        append(out.dependency_tree, DependencyNode {});
-        append(out.resources, Resource {});
+        append(out.dependency_tree, Slz::DependencyNode {});
+        append(out.resources, Slz::Resource {});
+    }
+
+    if (tokens.size == 0)
+    {
+        log_error(content, 0, "Tokens array is empty!");
+        return false;
     }
 
     {   // Add constants for true and false
-        DependencyNode node;
-        node.type  = Type::BOOLEAN;
+        Slz::DependencyNode node;
+        node.type  = Slz::Type::BOOLEAN;
 
-        Resource res;
+        Slz::Resource res;
 
         {
             node.index = out.resources.size;
@@ -354,12 +355,6 @@ bool parse_tokens(const DynamicArray<Token>& tokens, const String content, Docum
         }
     }
 
-    if (tokens.size == 0)
-    {
-        log_error("Tokens array is empty!");
-        return false;
-    }
-
     ParserContext context = {};
     context.content = content;
     
@@ -367,22 +362,22 @@ bool parse_tokens(const DynamicArray<Token>& tokens, const String content, Docum
 
     if (!context.encountered_error && context.current_index < tokens.size)
     {
-        log_error("End of file expected! (found: '%', line: %)", tokens[context.current_index].value, line_number(context.content, tokens[context.current_index].index));
+        log_error(context.content, tokens[context.current_index].index, "End of file expected! (found: '%')", tokens[context.current_index].value);
         context.encountered_error = true;
     }
 
     #ifdef GN_LOG_SERIALIZATION
         if (!context.encountered_error)
-            document_debug_output(out);
-    #endif // GN_DEBUG    
+            Slz::document_debug_output(out);
+    #endif // GN_LOG_SERIALIZATION
 
     return !context.encountered_error;
 }
 
-bool parse_string(const String content, Document& out)
+bool parse_string(const String content, Slz::Document& out)
 {
-    DynamicArray<Json::Token> tokens = {};
-    bool success = lex(content, tokens);
+    DynamicArray<Token> tokens = {};
+    bool success = tokenize(content, tokens);
 
     if (!success)
     {

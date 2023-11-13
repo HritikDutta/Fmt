@@ -17,7 +17,11 @@ String file_load_string(const String& filepath)
 
     // TODO: Strings are not always null terminated. Do something about that!
     FILE* file = fopen(path.data, "rb");
-    gn_assert_with_message(file, "Error opening file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    if (!file)
+    {
+        print_error("Error opening file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        return String {};
+    }
 
     fseek(file, 0, SEEK_END);
     int length = ftell(file);
@@ -45,7 +49,11 @@ Bytes file_load_bytes(const String& filepath)
 
     // TODO: Strings are not always null terminated. Do something about that!
     FILE* file = fopen(path.data, "rb");
-    gn_assert_with_message(file, "Error opening file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    if (!file)
+    {
+        print_error("Error opening file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        return Bytes {};
+    }
 
     fseek(file, 0, SEEK_END);
     int length = ftell(file);
@@ -72,13 +80,26 @@ void file_write_string(const String& filepath, const String& string)
 
     // TODO: Strings are not always null terminated. Do something about that!
     FILE* file = fopen(path.data, "wb");
-    gn_assert_with_message(file, "Error opening file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    if (!file)
+    {
+        print_error("Error opening file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        return;
+    }
 
     u64 written = fwrite(string.data, sizeof(u8), string.size, file);
-    gn_assert_with_message(written == string.size, "Error writing to file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    if (written != string.size)
+    {
+        print_error("Error writing to file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        fclose(file);
+        return;
+    }
 
-    int success = fclose(file);
-    gn_assert_with_message(success == 0, "Error closing file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    int error = fclose(file);
+    if (error)
+    {
+        print_error("Error closing file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        return;
+    }
 }
 
 void file_write_bytes(const String& filepath, const Bytes& bytes)
@@ -93,11 +114,24 @@ void file_write_bytes(const String& filepath, const Bytes& bytes)
 
     // TODO: Strings are not always null terminated. Do something about that!
     FILE* file = fopen(path.data, "wb");
-    gn_assert_with_message(file, "Error opening file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    if (!file)
+    {
+        print_error("Error opening file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        return;
+    }
 
     u64 written = fwrite(bytes.data, sizeof(u8), bytes.size, file);
-    gn_assert_with_message(written == bytes.size, "Error writing to file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    if (written != bytes.size)
+    {
+        print_error("Error writing to file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        fclose(file);
+        return;
+    }
 
-    int success = fclose(file);
-    gn_assert_with_message(success == 0, "Error closing file! (errno: \"%\", filepath: \"%\")", strerror(errno), filepath);
+    int error = fclose(file);
+    if (error)
+    {
+        print_error("Error closing file! (errno: \"%\", filepath: \"%\")\n", strerror(errno), filepath);
+        return;
+    }
 }

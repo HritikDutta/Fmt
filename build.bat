@@ -1,11 +1,20 @@
 @echo off
+setlocal EnableDelayedExpansion
 
-set executable_name="main.exe"
+set executable_name="fmt.exe"
 
-if "%1"=="release" (
+if "%1"=="install" (
+    set executable_name="C:/hd-tools/fmt.exe"
+
     set defines= /DGN_USE_OPENGL /DGN_PLATFORM_WINDOWS /DGN_RELEASE /DNDEBUG /DGN_COMPILER_MSVC /DGN_CUSTOM_MAIN
     set compile_flags= /MT /O2 /EHsc /std:c++17 /cgthreads8 /MP7 /GL
-    set link_flags= /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrtd.lib /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup /LTCG
+    set link_flags= /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrtd.lib /LTCG
+
+    echo INSTALLING EXECUTABLE
+) else if "%1"=="release" (
+    set defines= /DGN_USE_OPENGL /DGN_PLATFORM_WINDOWS /DGN_RELEASE /DNDEBUG /DGN_COMPILER_MSVC /DGN_CUSTOM_MAIN
+    set compile_flags= /MT /O2 /EHsc /std:c++17 /cgthreads8 /MP7 /GL
+    set link_flags= /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrtd.lib /LTCG
 
     echo BUILDING RELEASE EXECUTABLE
 ) else (
@@ -51,7 +60,7 @@ cl %compile_flags% /c src/math/*.cpp %defines% %includes%                 &^
 cl %compile_flags% /c src/formatter/*.cpp %defines% %includes%            &^
 cl %compile_flags% /c src/main.cpp %defines% %includes%
 
-link *.obj %libs% /OUT:%executable_name% %link_flags%
+link *.obj %libs% /OUT:!executable_name! %link_flags%
 
 rem Remove intermediate files
 del *.obj *.exp *.lib

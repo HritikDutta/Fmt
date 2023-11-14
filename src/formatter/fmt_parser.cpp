@@ -250,8 +250,13 @@ bool get_variable(ParseContext& ctx, Variable*& out_var)
 
                         case Token::Type::BRACKET_CLOSE:
                         {
-                            out_var->name = ref("array element");
-                            out_var->data = out_var->data.array[start.integer];
+                            Variable array_element;
+                            array_element.name = ref("array element");
+                            array_element.data = out_var->data.array[start.integer];
+                            
+                            append(ctx.var_stack, array_element);
+                            out_var = &ctx.var_stack[ctx.var_stack.size - 1];
+
                             ctx.token_index++;
                         } break;
 

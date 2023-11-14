@@ -23,7 +23,6 @@ inline void line_number(const String str, u64 index, u64& out_line, u64& out_col
 
 } // namespace Slz
 
-#ifdef GN_DEBUG
 #include "core/logger.h"
 
 #ifndef SLZ_ERROR_PREFIX
@@ -31,6 +30,3 @@ inline void line_number(const String str, u64 index, u64& out_line, u64& out_col
 #endif
 
 #define log_error(content, index, fmt, ...) { u64 line, col; Slz::line_number(content, index, line, col); print_error(SLZ_ERROR_PREFIX" Error[%, %]: " fmt "\n", line, col, __VA_ARGS__); gn_break_point(); }
-#else
-#define log_error(content, index, fmt, ...)
-#endif // GN_DEBUG

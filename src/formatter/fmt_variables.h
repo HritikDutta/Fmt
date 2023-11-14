@@ -17,6 +17,8 @@ struct TokenList
     DynamicArray<Token> tokens;
 };
 
+struct Variable;
+
 struct VariableData
 {
     enum struct Type : u8
@@ -35,16 +37,21 @@ struct VariableData
     };
 
     Type type;
-    String name;
     union
     {
         bool   boolean;
         s64    integer;
         String string;
         DynamicArray<VariableData> array;
-        HashTable<String, VariableData> object;
+        HashTable<String, Variable> object;
         TokenList token_list;
     };
+};
+
+struct Variable
+{
+    String name;
+    VariableData data;
 };
 
 static inline constexpr String get_variable_type_name(VariableData::Type type)

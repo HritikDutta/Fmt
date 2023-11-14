@@ -50,7 +50,7 @@ static VariableData extract_data_from_json_value(const Slz::Value& value)
             const Slz::Object& json_object = value.object();
 
             var.type = VariableData::Type::OBJECT;
-            var.object = make<HashTable<String, VariableData>>(json_object.capacity());
+            var.object = make<HashTable<String, Variable>>(json_object.capacity());
 
             const auto& json_object_internal_ht = json_object.document->dependency_tree[json_object.tree_index].object;
             u64 filled = json_object_internal_ht.filled;
@@ -59,7 +59,11 @@ static VariableData extract_data_from_json_value(const Slz::Value& value)
                 if (json_object_internal_ht.states[i] == Slz::ObjectNode::State::ALIVE)
                 {
                     Slz::Value prop_value = { json_object.document, json_object_internal_ht.values[i] };
-                    put(var.object, json_object_internal_ht.keys[i], extract_data_from_json_value(prop_value));
+                    Variable child;
+                    child.name = json_object_internal_ht.keys[i];
+                    child.data = extract_data_from_json_value(prop_value);
+
+                    put(var.object, json_object_internal_ht.keys[i], child);
                     filled--;
                 }
             }
@@ -71,10 +75,13 @@ static VariableData extract_data_from_json_value(const Slz::Value& value)
 
 void prepare_data(Pass& pass, const Slz::Value& base_data)
 {
-    pass.root_var.type = VariableData::Type::OBJECT;
+    pass.root_var.name = ref("root");
+    VariableData& root_var_data = pass.root_var.data;
+
+    root_var_data.type = VariableData::Type::OBJECT;
 
     const Slz::Object& json_object = base_data.object();
-    pass.root_var.object = make<HashTable<String, VariableData>>(json_object.capacity());
+    root_var_data.object = make<HashTable<String, Variable>>(json_object.capacity());
 
     const auto& json_object_internal_ht = json_object.document->dependency_tree[json_object.tree_index].object;
     u64 filled = json_object_internal_ht.filled;
@@ -86,8 +93,12 @@ void prepare_data(Pass& pass, const Slz::Value& base_data)
             if (json_object_internal_ht.keys[i] == ref("templates"))
                 continue;
 
-            Slz::Value prop_value = { json_object.document, json_object_internal_ht.values[i] };
-            put(pass.root_var.object, json_object_internal_ht.keys[i], extract_data_from_json_value(prop_value));
+            const Slz::Value prop_value = { json_object.document, json_object_internal_ht.values[i] };
+
+            Variable child;
+            child.name = json_object_internal_ht.keys[i];
+            child.data = extract_data_from_json_value(prop_value);
+            put(root_var_data.object, json_object_internal_ht.keys[i], child);
             filled--;
         }
     }
@@ -95,15 +106,29 @@ void prepare_data(Pass& pass, const Slz::Value& base_data)
 
 void prepare_pass(Pass& pass, const Slz::Value& params)
 {
-    auto& result = find(pass.root_var.object, ref("params"));
+    const String params_string = ref("params");
+
+    auto& result = find(pass.root_var.data.object, params_string);
+
+    Variable params_var;
 
     if (result)
     {
-        VariableData var = result.value();
-        free(var.object);
+        params_var = result.value();
+
+        // Discard previous values for params
+        if (params_var.data.type == VariableData::Type::OBJECT)
+            free(params_var.data.object);
+        else if (params_var.data.type == VariableData::Type::ARRAY)
+            free(params_var.data.array);
+    }
+    else
+    {
+        params_var.name = params_string;
     }
 
-    put(pass.root_var.object, ref("params"), extract_data_from_json_value(params));
+    params_var.data = extract_data_from_json_value(params);
+    put(pass.root_var.data.object, params_string, params_var);
 }
 
 }

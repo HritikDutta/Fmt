@@ -15,7 +15,7 @@ namespace Fmt
 
 struct Pass
 {
-    VariableData root_var;
+    Variable root_var;
     DynamicArray<Token> tokens;
 };
 

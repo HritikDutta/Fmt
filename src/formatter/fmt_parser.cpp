@@ -21,10 +21,10 @@ struct ParseContext
     StringBuilder& builder;
 
     DynamicArray<Token> tokens;
-    VariableData* parent_var;
+    Variable* parent_var;
     u64 token_index;
 
-    DynamicArray<VariableData> var_stack;
+    DynamicArray<Variable> var_stack;
     DynamicArray<Token> op_stack;
 
     HashTable<String, TokenList> tokenized_files;
@@ -43,25 +43,25 @@ static bool parse_tokens(ParseContext& ctx);
 static bool store_token_in_var(const Token& token, VariableData& var, ParseContext& ctx);
 static bool get_file(ParseContext& ctx, TokenList& out_file);
 
-static VariableData* get_variable_data(ParseContext& ctx)
+static Variable* get_variable_data(ParseContext& ctx)
 {
     // It's assumed that the variable is a member of an object
     Token token = ctx.tokens[ctx.token_index];
-    const auto& result = find(ctx.parent_var->object, token.string);
+    const auto& result = find(ctx.parent_var->data.object, token.string);
 
     if (!result)
     {
         // Variable doesn't exist yet!
-        VariableData var;
-        var.type = VariableData::Type::NONE;
-        var.name = token.string;
-        return &(put(ctx.parent_var->object, token.string, var).value());
+        Variable var;
+        var.data.type = VariableData::Type::NONE;
+        var.name = copy(token.string);
+        return &(put(ctx.parent_var->data.object, token.string, var).value());
     }
 
     return &(result.value());
 }
 
-bool get_variable(ParseContext& ctx, VariableData*& out_var)
+bool get_variable(ParseContext& ctx, Variable*& out_var)
 {
     bool encountered_error = false;
     const Token& token = ctx.tokens[ctx.token_index];
@@ -71,7 +71,7 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
 
     {   // Check if members are being refered
         Token next_token = ctx.tokens[ctx.token_index];
-        VariableData* prev_parent = ctx.parent_var;
+        Variable* prev_parent = ctx.parent_var;
         
         bool keep_parsing = true;
         while (keep_parsing)
@@ -82,7 +82,7 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                 {
                     ctx.token_index++;
 
-                    switch (out_var->type)
+                    switch (out_var->data.type)
                     {
                         case VariableData::Type::OBJECT:
                         {
@@ -125,10 +125,10 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                                 break;
                             }
 
-                            VariableData end;
-                            end.string = ref("end");
-                            end.type = VariableData::Type::INTEGER;
-                            end.integer = out_var->array.size - 1;
+                            Variable end;
+                            end.name = ref("end");
+                            end.data.type = VariableData::Type::INTEGER;
+                            end.data.integer = out_var->data.array.size - 1;
                             
                             append(ctx.var_stack, end);
                             out_var = &ctx.var_stack[ctx.var_stack.size - 1];
@@ -138,7 +138,7 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
 
                         default:
                         {
-                            log_error(ctx.content, next_token.index, "Variable is not an object or array so it can't have any members! (variable type: %)", get_variable_type_name(out_var->type));
+                            log_error(ctx.content, next_token.index, "Variable is not an object or array so it can't have any members! (variable: %, type)", out_var->name, get_variable_type_name(out_var->data.type));
                             encountered_error = true;
                             ctx.token_index++;
                         } break;
@@ -149,9 +149,9 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                 {
                     ctx.token_index++;
 
-                    if (out_var->type != VariableData::Type::ARRAY)
+                    if (out_var->data.type != VariableData::Type::ARRAY)
                     {
-                        log_error(ctx.content, next_token.index, "Variable is not an array so it can't be indexed! (variable type: %)", get_variable_type_name(out_var->type));
+                        log_error(ctx.content, next_token.index, "Variable is not an array so it can't be indexed! (variable: %, type: %)", out_var->name, get_variable_type_name(out_var->data.type));
                         encountered_error = true;
                         break;
                     }
@@ -182,9 +182,9 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                         break;
                     }
 
-                    if (start.integer < 0 || start.integer >= out_var->array.size)
+                    if (start.integer < 0 || start.integer >= out_var->data.array.size)
                     {
-                        log_error(ctx.content, token.index, "Index out of bounds! (index: %, array size: %)", start.integer, out_var->array.size);
+                        log_error(ctx.content, token.index, "Index out of bounds! (array: %, index: %, array size: %)", out_var->name, start.integer, out_var->data.array.size);
                         encountered_error = true;
                         break;
                     }
@@ -214,9 +214,9 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                                 break;
                             }
 
-                            if (end.integer < 0 || end.integer >= out_var->array.size)
+                            if (end.integer < 0 || end.integer >= out_var->data.array.size)
                             {
-                                log_error(ctx.content, token.index, "Index out of bounds! (index: %, array size: %)", end.integer, out_var->array.size);
+                                log_error(ctx.content, token.index, "Index out of bounds! (array: %, index: %, array size: %)", out_var->name, end.integer, out_var->data.array.size);
                                 encountered_error = true;
                                 break;
                             }
@@ -228,12 +228,12 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
                                 break;
                             }
 
-                            VariableData slice;
+                            Variable slice;
                             slice.name = out_var->name;
-                            slice.type = VariableData::Type::ARRAY;
-                            slice.array.data = out_var->array.data + start.integer;
-                            slice.array.size = end.integer - start.integer + 1;
-                            slice.array.capacity = out_var->array.capacity - start.integer;
+                            slice.data.type = VariableData::Type::ARRAY;
+                            slice.data.array.data = out_var->data.array.data + start.integer;
+                            slice.data.array.size = end.integer - start.integer + 1;
+                            slice.data.array.capacity = out_var->data.array.capacity - start.integer;
 
                             append(ctx.var_stack, slice);
                             out_var = &ctx.var_stack[ctx.var_stack.size - 1];
@@ -250,7 +250,8 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
 
                         case Token::Type::BRACKET_CLOSE:
                         {
-                            out_var = &out_var->array[start.integer];
+                            out_var->name = ref("array element");
+                            out_var->data = out_var->data.array[start.integer];
                             ctx.token_index++;
                         } break;
 
@@ -278,7 +279,7 @@ bool get_variable(ParseContext& ctx, VariableData*& out_var)
     return encountered_error;
 }
 
-static bool store_token_in_var(const Token& token, VariableData& var, ParseContext& ctx)
+static bool store_token_in_var(const Token& token, VariableData& var_data, ParseContext& ctx)
 {
     bool encountered_error = false;
 
@@ -286,51 +287,46 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
     {
         case Token::Type::STRING:
         {
-            var.string = get_token_type_name(token.type);
-            var.type = VariableData::Type::STRING;
-            var.string = token.string;
+            var_data.type = VariableData::Type::STRING;
+            var_data.string = token.string;
             ctx.token_index++;
         } break;
         
         case Token::Type::INTEGER:
         {
-            var.string = get_token_type_name(token.type);
-            var.type = VariableData::Type::INTEGER;
-            var.integer = token.integer;
+            var_data.type = VariableData::Type::INTEGER;
+            var_data.integer = token.integer;
             ctx.token_index++;
         } break;
         
         case Token::Type::BOOLEAN:
         {
-            var.string = get_token_type_name(token.type);
-            var.type = VariableData::Type::BOOLEAN;
-            var.integer = token.boolean;
+            var_data.type = VariableData::Type::BOOLEAN;
+            var_data.integer = token.boolean;
             ctx.token_index++;
         } break;
 
         case Token::Type::TOKENS:
         {
-            var.string = get_token_type_name(token.type);
-            var.type = VariableData::Type::TOKEN_LIST;
-            var.token_list.tokens = token.tokens;
-            var.token_list.content = ctx.content;
+            var_data.type = VariableData::Type::TOKEN_LIST;
+            var_data.token_list.tokens = token.tokens;
+            var_data.token_list.content = ctx.content;
             ctx.token_index++;
         } break;
         
         case Token::Type::IDENTIFIER:
         {
-            VariableData* rhs;
+            Variable* rhs;
             encountered_error = get_variable(ctx, rhs);
-            var = *rhs;
+            var_data = rhs->data;
         } break;
 
         case Token::Type::FILE:
         {
             ctx.token_index++;
             
-            var.string = get_token_type_name(token.type);
-            var.type = VariableData::Type::TOKEN_LIST;
-            encountered_error = get_file(ctx, var.token_list);
+            var_data.type = VariableData::Type::TOKEN_LIST;
+            encountered_error = get_file(ctx, var_data.token_list);
         } break;
 
         default:
@@ -344,32 +340,33 @@ static bool store_token_in_var(const Token& token, VariableData& var, ParseConte
     return encountered_error;
 }
 
-static bool append_variable(const ParseContext& ctx, const VariableData* var)
+static bool append_variable(const ParseContext& ctx, const Variable* var)
 {
     bool encountered_error = false;
 
-    switch (var->type)
+    const VariableData& var_data = var->data;
+    switch (var_data.type)
     {
         case VariableData::Type::BOOLEAN:
         {
-            append(ctx.builder, var->boolean ? ref("true") : ref("false"));
+            append(ctx.builder, var_data.boolean ? ref("true") : ref("false"));
         } break;
 
         case VariableData::Type::INTEGER:
         {
             String number_string = make<String>("12312312313123123");
-            to_string(number_string, var->integer);
+            to_string(number_string, var_data.integer);
             append(ctx.builder, number_string);
         } break;
 
         case VariableData::Type::STRING:
         {
-            append(ctx.builder, var->string);
+            append(ctx.builder, var_data.string);
         } break;
 
         case VariableData::Type::TOKEN_LIST:
         {
-            encountered_error = parse_tokens(create_sub_ctx(ctx, var->token_list.content, var->token_list.tokens));
+            encountered_error = parse_tokens(create_sub_ctx(ctx, var_data.token_list.content, var_data.token_list.tokens));
         } break;
 
         case VariableData::Type::NONE:
@@ -382,7 +379,7 @@ static bool append_variable(const ParseContext& ctx, const VariableData* var)
         default:
         {
             const Token& current_token = ctx.tokens[ctx.token_index];
-            log_error(ctx.content, current_token.index, "Can't convert variable of % type to string for formatting! (variable: %)", get_variable_type_name(var->type), var->name);
+            log_error(ctx.content, current_token.index, "Can't convert variable of % type to string for formatting! (variable: %)", get_variable_type_name(var_data.type), var->name);
             encountered_error = true;
         } break;
     }
@@ -464,15 +461,16 @@ static inline bool parse_evaluation(ParseContext& ctx, Token start_token)
                 case Token::Type::INTEGER:
                 case Token::Type::STRING:
                 {
-                    VariableData var;
-                    store_token_in_var(next_token, var, ctx);
+                    Variable var;
+                    var.name = ref("evaluation");
+                    store_token_in_var(next_token, var.data, ctx);
                     append(ctx.var_stack, var);
                     collected_var_count++;
                 } break;
 
                 case Token::Type::IDENTIFIER:
                 {
-                    VariableData* var;
+                    Variable* var;
                     encountered_error = get_variable(ctx, var);
                     append(ctx.var_stack, *var);
                     collected_var_count++;
@@ -526,11 +524,12 @@ static inline bool parse_evaluation(ParseContext& ctx, Token start_token)
     {
         Token current_op = pop(ctx.op_stack);
 
-        VariableData var1 = pop(ctx.var_stack);
-        VariableData var2 = pop(ctx.var_stack);
+        Variable& var1 = pop(ctx.var_stack);
+        Variable& var2 = pop(ctx.var_stack);
 
-        VariableData res = {};
-        encountered_error = combine_evaluation(var1, var2, res, current_op, ctx);
+        Variable res = {};
+        res.name = ref("evaluation");
+        encountered_error = combine_evaluation(var1.data, var2.data, res.data, current_op, ctx);
 
         append(ctx.var_stack, res);
     }
@@ -557,10 +556,10 @@ inline bool parse_decision_tree(ParseContext& ctx, DynamicArray<Token>& out_toke
         case Token::Type::IF:
         {
             encountered_error = parse_evaluation(ctx, token);
-            VariableData evaluation = pop(ctx.var_stack);
+            Variable evaluation = pop(ctx.var_stack);
 
             Token next_token = ctx.tokens[ctx.token_index]; // parse_evaluation() already checks for errors for not having a tokens after condition
-            bool is_evaluation_true = evaluate_variable(evaluation);
+            bool is_evaluation_true = evaluate_variable(evaluation.data);
             ctx.token_index++;
             
             if (is_evaluation_true)
@@ -683,7 +682,7 @@ bool parse_format_tag(ParseContext& ctx)
 
             case Token::Type::IDENTIFIER:
             {
-                VariableData* var;
+                Variable* var;
                 encountered_error = get_variable(ctx, var);
 
                 Token next_token = ctx.tokens[ctx.token_index];
@@ -694,7 +693,7 @@ bool parse_format_tag(ParseContext& ctx)
                         ctx.token_index++;
 
                         next_token = ctx.tokens[ctx.token_index];
-                        store_token_in_var(next_token, *var, ctx);
+                        store_token_in_var(next_token, var->data, ctx);
                     } break;
 
                     case Token::Type::FMT_END:
@@ -724,18 +723,18 @@ bool parse_format_tag(ParseContext& ctx)
             {
                 ctx.token_index++;
 
-                VariableData* var;
+                Variable* var;
                 encountered_error = get_variable(ctx, var);
 
                 Token next_token = ctx.tokens[ctx.token_index];
 
-                VariableData* index = {};
+                Variable* index = {};
                 if (next_token.type == Token::Type::COMMA)
                 {
                     // Need an index too
                     ctx.token_index++;
                     encountered_error = get_variable(ctx, index);
-                    index->type = VariableData::Type::INTEGER;
+                    index->data.type = VariableData::Type::INTEGER;
 
                     next_token = ctx.tokens[ctx.token_index];
                 }
@@ -752,12 +751,13 @@ bool parse_format_tag(ParseContext& ctx)
                             break;
                         }
                         
-                        VariableData* array_var;
+                        Variable* array_var;
                         encountered_error = get_variable(ctx, array_var);
 
-                        if (array_var->type != VariableData::Type::ARRAY)
+                        const VariableData& array_var_data = array_var->data;
+                        if (array_var_data.type != VariableData::Type::ARRAY)
                         {
-                            log_error(ctx.content, next_token.index, "For loops can only loop over arrays! (found variable type: %)", get_variable_type_name(array_var->type));
+                            log_error(ctx.content, next_token.index, "For loops can only loop over arrays! (variable: %, type: %)", array_var->name, get_variable_type_name(array_var_data.type));
                             encountered_error = true;
                             break;
                         }
@@ -779,12 +779,12 @@ bool parse_format_tag(ParseContext& ctx)
 
                         DynamicArray<Token> loop_body = next_token.tokens;
 
-                        for (u64 i = 0; i < array_var->array.size; i++)
+                        for (u64 i = 0; i < array_var_data.array.size; i++)
                         {
-                            *var = array_var->array[i];
+                            var->data = array_var_data.array[i];
 
                             if (index)
-                                index->integer = i;
+                                index->data.integer = i;
 
                             encountered_error = parse_tokens(create_sub_ctx(ctx, ctx.content, loop_body));
                         }

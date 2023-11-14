@@ -45,16 +45,6 @@ bool tokenize(const String content, DynamicArray<Token>& tokens, u64& current_in
 
         // Now we're inside a tag
         
-        // Adjust scan start so it ignores whitespace before the tag
-        for (u64 i = scan_start; i <= current_index; i++)
-        {
-            if (!is_white_space(content[i]))
-            {
-                scan_start = i;
-                break;
-            }
-        }
-
         // Append raw string as a token if needed
         if (current_index > scan_start)
         {

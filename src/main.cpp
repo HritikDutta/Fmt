@@ -69,14 +69,14 @@ int main(int argc, char** argv)
             Fmt::prepare_pass(pass, passes[pass_idx]);
             if (!Fmt::parse_template(template_content, pass, builder))
             {
-                print_error("Error parsing template!\r\n");
+                print_error("Error parsing template!\n");
                 break;  // No point trying the other passes I guess
             }
 
             out_file_pass.root_var = pass.root_var;
             if (!Fmt::parse_template(file_path_content, out_file_pass, file_path_builder))
             {
-                print_error("Error parsing output file path!\r\n");
+                print_error("Error parsing output file path!\n");
                 break;  // No point trying the other passes I guess
             }
 
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
             String file_path_output = build_string(file_path_builder);
 
             file_write_string(file_path_output, template_output);
-            print("Written to: '%'", file_path_output);
+            print("Written to: '%'\n", file_path_output);
 
             free(template_output);
             free(file_path_output);

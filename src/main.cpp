@@ -21,7 +21,12 @@ int main(int argc, char** argv)
     if (!content.data)
         return 1;
     #else
-    String content = file_load_string(ref("tests/template.yaml"));
+    String content;
+
+    if (argc < 2)
+        content = file_load_string(ref("tests/template.yaml"));
+    else
+        content = file_load_string(ref(argv[1]));
     #endif
 
     Slz::Document document = {};
